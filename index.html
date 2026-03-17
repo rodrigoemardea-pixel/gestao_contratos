@@ -3338,7 +3338,15 @@ function renderTimeline(){
   (c.pagamentos||[]).forEach(p=>{
     const m=MESES_CURTOS.indexOf((p.mes||'').toUpperCase());
     const key=`${p.ano}-${String(m+1).padStart(2,'0')}`;
-    if(!pgMes[key]) pgMes[key]={mes:p.mes,ano:p.ano,total:0,count:0,data:p.ano&&m>=0?`${p.ano}-${String(m+1).padStart(2,'0')}-01`:null};
+    if(!pgMes[key]){
+      // Último dia do mês: new Date(ano, mes, 0) retorna o último dia do mês anterior ao mes+1
+      let dataUltDia=null;
+      if(p.ano&&m>=0){
+        const ultimo=new Date(parseInt(p.ano), m+1, 0).getDate();
+        dataUltDia=`${p.ano}-${String(m+1).padStart(2,'0')}-${String(ultimo).padStart(2,'0')}`;
+      }
+      pgMes[key]={mes:p.mes,ano:p.ano,total:0,count:0,data:dataUltDia};
+    }
     pgMes[key].total+=pv(p.apagar);
     pgMes[key].count++;
   });
