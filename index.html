@@ -555,10 +555,10 @@ canvas{max-height:220px}
     <div id="gl-pane-emp">
       <div class="table-wrapper" style="max-height:360px;margin-bottom:0">
         <table><thead><tr>
-          <th>Nº Empenho</th><th>Ano</th>
+          <th>Nº Empenho</th><th>Ano</th><th>Data</th><th>Documento SEI</th>
           <th class="money">Valor Emp.</th><th class="money">Pago</th><th class="money">Saldo</th><th>Ações</th>
         </tr></thead>
-        <tbody id="tbody-empenhos"><tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text-tertiary)">Nenhum empenho.</td></tr></tbody>
+        <tbody id="tbody-empenhos"><tr><td colspan="9" style="text-align:center;padding:30px;color:var(--text-tertiary)">Nenhum empenho.</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -667,6 +667,8 @@ canvas{max-height:220px}
         </div>
         <div class="fg full"><label class="fl">Número do Empenho *</label><input class="fc" type="text" id="e-numero" placeholder="Ex: 2024NE001" oninput="extrairAnoEmpenho(this.value)"></div>
         <div class="fg half"><label class="fl">Valor (R$) *</label><input class="fc" type="number" id="e-valor" placeholder="0,00" step="0.01"></div>
+        <div class="fg half"><label class="fl">Data do Empenho</label><input class="fc" type="date" id="e-data"></div>
+        <div class="fg full"><label class="fl">Nº Documento SEI</label><input class="fc" type="text" id="e-sei" placeholder="Ex: 00390.001234/2024-01"></div>
       </div>
     </div>
     <div class="modal-footer">
@@ -1364,10 +1366,12 @@ function openModalEmpenho(empenhoId){
     selItem.value=emp.itemId||'';
     document.getElementById('e-numero').value=emp.numero||'';
     document.getElementById('e-valor').value=emp.valor||'';
+    document.getElementById('e-data').value=emp.data||'';
+    document.getElementById('e-sei').value=emp.sei||'';
     extrairAnoEmpenho(emp.numero||'');
   } else {
     document.getElementById('mtitle-empenho').textContent='Novo Empenho';
-    ['e-numero','e-valor'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+    ['e-numero','e-valor','e-data','e-sei'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   }
   openModal('empenho');
 }
@@ -1378,9 +1382,11 @@ function salvarEmpenho(){
   if(!itemId||!numero){toast('Preencha item e número do empenho','error');return;}
   const match=numero.match(/\d{4}/);
   const ano=match?match[0]:String(new Date().getFullYear());
+  const data=document.getElementById('e-data').value||'';
+  const sei=uc(document.getElementById('e-sei').value.trim());
   const c=DB.contratos.find(x=>x.id===currentContratoId); if(!c)return;
   if(!c.empenhos)c.empenhos=[];
-  const dados={itemId,numero,ano,valor};
+  const dados={itemId,numero,ano,valor,data,sei};
   if(editEmpenhoId){
     const idx=c.empenhos.findIndex(x=>x.id===editEmpenhoId);
     if(idx!==-1)c.empenhos[idx]={...c.empenhos[idx],...dados};
@@ -2419,7 +2425,7 @@ function renderGlobal(){
   document.getElementById('gl-count-emp').textContent=empenhos.length;
   const tbEmp=document.getElementById('tbody-empenhos');
   if(!empenhos.length){
-    tbEmp.innerHTML='<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text-tertiary)">Nenhum empenho para os filtros selecionados.</td></tr>';
+    tbEmp.innerHTML='<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--text-tertiary)">Nenhum empenho para os filtros selecionados.</td></tr>';
   } else {
     tbEmp.innerHTML=empenhos.map(e=>{
       const pago=(c.pagamentos||[]).filter(p=>p.empenhoNumero===e.numero).reduce((s,p)=>s+pv(p.apagar),0);
@@ -2434,6 +2440,7 @@ function renderGlobal(){
         return`<tr style="background:${isRef?'var(--success-soft)':'var(--danger-soft)'}">
           <td class="mono" style="padding-left:22px;color:${cor};font-size:10px">${icone} ${label}</td>
           <td class="mono" style="font-size:10px;color:var(--text-tertiary)">${fmtD(m.data)}</td>
+          <td colspan="2"></td>
           <td class="money" style="color:${cor};font-weight:600">${sinal}${fmt(m.valor)}</td>
           <td colspan="2" style="font-size:10px;color:var(--text-tertiary)">${m.obs||'—'}</td>
           <td onclick="event.stopPropagation()"><div class="action-wrap">
@@ -2446,6 +2453,8 @@ function renderGlobal(){
       return`<tr style="${empRowStyle}">
         <td class="mono">${e.numero}${e.valorOriginal!=null&&e.valorOriginal!==e.valor?` <span class="badge badge-gray" style="font-size:9px">orig: ${fmt(e.valorOriginal)}</span>`:''}</td>
         <td class="mono">${e.ano}</td>
+        <td class="mono" style="font-size:11px">${e.data?fmtD(e.data):'—'}</td>
+        <td class="mono" style="font-size:11px;color:var(--text-secondary)">${e.sei||'—'}</td>
         <td class="money">${fmt(e.valor)}</td>
         <td class="money" style="color:var(--success)">${fmt(pago)}</td>
         <td class="money" style="color:${saldo<0?'var(--danger)':saldo===0?'var(--text-tertiary)':'var(--success)'}; font-weight:600">${fmt(saldo)}</td>
@@ -2463,7 +2472,7 @@ function renderGlobal(){
     }).join('');
     const totEmp=empenhos.reduce((s,e)=>s+pv(e.valor),0);
     const totPagoEmp=empenhos.reduce((s,e)=>s+(c.pagamentos||[]).filter(p=>p.empenhoNumero===e.numero).reduce((ss,p)=>ss+pv(p.apagar),0),0);
-    tbEmp.innerHTML+=`<tr class="total-row"><td colspan="2">Total (${empenhos.length} empenho${empenhos.length!==1?'s':''})</td><td class="money">${fmt(totEmp)}</td><td class="money" style="color:var(--success)">${fmt(totPagoEmp)}</td><td class="money">${fmt(totEmp-totPagoEmp)}</td><td></td></tr>`;
+    tbEmp.innerHTML+=`<tr class="total-row"><td colspan="4">Total (${empenhos.length} empenho${empenhos.length!==1?'s':''})</td><td class="money">${fmt(totEmp)}</td><td class="money" style="color:var(--success)">${fmt(totPagoEmp)}</td><td class="money">${fmt(totEmp-totPagoEmp)}</td><td></td></tr>`;
   }
 
   // ── ABA PAGAMENTOS ──
