@@ -1554,13 +1554,19 @@ function filtrarEmpenhosPorAno(){
   sel.innerHTML='<option value="">Selecione o empenho...</option>';
   if(!ano||!currentContratoId) return;
   const c=DB.contratos.find(x=>x.id===currentContratoId); if(!c) return;
-  (c.empenhos||[]).filter(e=>String(e.ano)===ano).forEach(e=>{
+  const emps=(c.empenhos||[]).filter(e=>String(e.ano)===ano);
+  emps.forEach(e=>{
     const saldo=calcSaldoEmp(c,e.numero);
     const op=document.createElement('option');
     op.value=e.numero;
     op.textContent=`${e.numero}${e.tipo?' — '+e.tipo:''} — ${fmt(e.valor)} (saldo: ${fmt(saldo)})`;
     sel.appendChild(op);
   });
+  // Auto-seleciona se só houver 1 empenho no ano
+  if(emps.length===1){
+    sel.value=emps[0].numero;
+    preencherItemPorEmpenho();
+  }
 }
 
 function preencherItemPorEmpenho(){
@@ -1572,6 +1578,35 @@ function preencherItemPorEmpenho(){
   if([...selItem.options].some(o=>o.value===emp.itemId)){
     selItem.value=emp.itemId;
   }
+}
+
+function clonarPagamento(pagamentoId){
+  const c=DB.contratos.find(x=>x.id===currentContratoId); if(!c) return;
+  const pg=(c.pagamentos||[]).find(x=>x.id===pagamentoId); if(!pg) return;
+  // Abre o modal de pagamento normalmente
+  openModalPagamento();
+  // Após o modal abrir, preenche os campos com os dados do pagamento clonado
+  setTimeout(()=>{
+    document.getElementById('p-ano').value=pg.ano||'';
+    filtrarEmpenhosPorAno();
+    setTimeout(()=>{
+      document.getElementById('p-empenho').value=pg.empenhoNumero||'';
+      preencherItemPorEmpenho();
+      // Sobrescreve item caso o empenho não tenha itemId mas o pagamento tenha
+      if(pg.itemId){
+        const selItem=document.getElementById('p-item');
+        if([...selItem.options].some(o=>o.value===pg.itemId)) selItem.value=pg.itemId;
+      }
+      document.getElementById('p-mes').value=pg.mes||'';
+      document.getElementById('p-nf').value=pg.nf||'';
+      document.getElementById('p-sei').value=pg.sei||'';
+      document.getElementById('p-valor').value=pg.valor||'';
+      document.getElementById('p-glosa').value=pg.glosa||'0';
+      document.getElementById('p-outro').value=pg.outro||'';
+      calcAPagar();
+      document.getElementById('mtitle-pagamento').textContent='Clonar Pagamento';
+    },50);
+  },50);
 }
 
 function openModalPagamento(pagamentoId){
@@ -2613,8 +2648,10 @@ function renderGlobal(){
       <td onclick="event.stopPropagation()"><div class="action-wrap">
         <button class="action-btn" onclick="openActionMenu(event,this)" style="width:auto;padding:0 8px;font-size:11px;font-weight:600">Ações ▾</button>
         <div class="action-dropdown-menu">
-          <div class="action-item" onclick="openModalPagamento('${p.id}')">Editar</div>
-          <div class="action-item danger" onclick="excluirPagamento('${p.id}')">Excluir</div>
+          <div class="action-item" onclick="openModalPagamento('${p.id}')">✏️ Editar</div>
+          <div class="action-item" onclick="clonarPagamento('${p.id}')">📋 Clonar</div>
+          <div class="action-divider"></div>
+          <div class="action-item danger" onclick="excluirPagamento('${p.id}')">🗑️ Excluir</div>
         </div>
       </div></td>
     </tr>`).join('');
@@ -2713,10 +2750,16 @@ function openActionMenu(event,btn){
   if(menu.style.display==='block'){menu.style.display='none';return;}
   closeActionMenus();
   const rect=btn.getBoundingClientRect();
-  menu.style.display='block';menu.style.position='fixed';
-  menu.style.left=Math.max(8,rect.right-170)+'px';
-  menu.style.top=(rect.bottom+4)+'px';
-  if(parseInt(menu.style.top)+200>window.innerHeight)menu.style.top=(rect.top-200)+'px';
+  const menuW=170, menuH=160;
+  const vw=window.innerWidth, vh=window.innerHeight;
+  const left=Math.min(Math.max(8, rect.right-menuW), vw-menuW-8);
+  const spaceBelow=vh-(rect.bottom+4);
+  const top=spaceBelow>=menuH ? rect.bottom+4 : rect.top-menuH-4;
+  menu.style.display='block';
+  menu.style.position='fixed';
+  menu.style.left=left+'px';
+  menu.style.top=Math.max(8,top)+'px';
+  menu.style.zIndex='9999';
   setTimeout(()=>document.addEventListener('click',closeActionMenus,{once:true}),0);
 }
 function closeActionMenus(){ document.querySelectorAll('.action-dropdown-menu').forEach(m=>m.style.display='none'); }
