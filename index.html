@@ -771,7 +771,7 @@ canvas{max-height:220px}
           <select class="fc" id="p-ano" onchange="filtrarEmpenhosPorAno()"><option value="">Selecione o ano...</option></select>
         </div>
         <div class="fg full"><label class="fl">Empenho *</label>
-          <select class="fc" id="p-empenho"><option value="">— selecione mês/ano primeiro —</option></select>
+          <select class="fc" id="p-empenho" onchange="preencherItemPorEmpenho()"><option value="">— selecione mês/ano primeiro —</option></select>
         </div>
         <div class="fg full"><label class="fl">Item do Contrato *</label>
           <select class="fc" id="p-item"><option value="">Selecione o item...</option></select>
@@ -1461,7 +1461,7 @@ function openModalReforco(empenhoId, movId){
     document.getElementById('reforco-obs').value='';
   }
   document.getElementById('reforco-emp-info').innerHTML=
-    `Empenho: <strong>${emp.numero}</strong> (${emp.tipo}) &nbsp;|&nbsp; Valor atual: <strong>${fmt(emp.valor)}</strong> &nbsp;|&nbsp; Saldo: <strong style="color:var(--success)">${fmt(saldo)}</strong>`;
+    `Empenho: <strong>${emp.numero}</strong>${emp.tipo?' ('+emp.tipo+')':''} &nbsp;|&nbsp; Valor atual: <strong>${fmt(emp.valor)}</strong> &nbsp;|&nbsp; Saldo: <strong style="color:var(--success)">${fmt(saldo)}</strong>`;
   openModal('reforco');
 }
 function salvarReforco(){
@@ -1494,7 +1494,7 @@ function openModalCancelamento(empenhoId, movId){
   const emp=(c?.empenhos||[]).find(x=>x.id===empenhoId); if(!emp)return;
   const saldo=calcSaldoEmp(c,emp.numero);
   document.getElementById('cancelamento-emp-info').innerHTML=
-    `Empenho: <strong>${emp.numero}</strong> (${emp.tipo}) &nbsp;|&nbsp; Valor atual: <strong>${fmt(emp.valor)}</strong> &nbsp;|&nbsp; Saldo: <strong style="color:var(--success)">${fmt(saldo)}</strong>`;
+    `Empenho: <strong>${emp.numero}</strong>${emp.tipo?' ('+emp.tipo+')':''} &nbsp;|&nbsp; Valor atual: <strong>${fmt(emp.valor)}</strong> &nbsp;|&nbsp; Saldo: <strong style="color:var(--success)">${fmt(saldo)}</strong>`;
   document.getElementById('cancelamento-valor').dataset.valorAtual=emp.valor;
   if(movId){
     const mov=(emp.movimentos||[]).find(x=>x.id===movId); if(!mov)return;
@@ -1555,9 +1555,20 @@ function filtrarEmpenhosPorAno(){
     const saldo=calcSaldoEmp(c,e.numero);
     const op=document.createElement('option');
     op.value=e.numero;
-    op.textContent=`${e.numero} — ${e.tipo} — ${fmt(e.valor)} (saldo: ${fmt(saldo)})`;
+    op.textContent=`${e.numero}${e.tipo?' — '+e.tipo:''} — ${fmt(e.valor)} (saldo: ${fmt(saldo)})`;
     sel.appendChild(op);
   });
+}
+
+function preencherItemPorEmpenho(){
+  const numero=document.getElementById('p-empenho').value;
+  if(!numero||!currentContratoId) return;
+  const c=DB.contratos.find(x=>x.id===currentContratoId); if(!c) return;
+  const emp=(c.empenhos||[]).find(e=>e.numero===numero); if(!emp||!emp.itemId) return;
+  const selItem=document.getElementById('p-item');
+  if([...selItem.options].some(o=>o.value===emp.itemId)){
+    selItem.value=emp.itemId;
+  }
 }
 
 function openModalPagamento(pagamentoId){
