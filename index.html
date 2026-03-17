@@ -3171,6 +3171,7 @@ async function fazerLogin(){
     document.getElementById('view-login').classList.remove('active');
     document.getElementById('view-list').classList.add('active');
     setTimeout(mostrarPendencias, 600);
+  } catch(e){
     erroEl.textContent = e.code==='auth/invalid-credential'||e.code==='auth/wrong-password'||e.code==='auth/user-not-found'
       ? 'E-mail ou senha inválidos.' : 'Erro ao entrar. Tente novamente.';
     btn.disabled=false; btn.textContent='Entrar';
@@ -3525,26 +3526,62 @@ function fecharPendencias(){ document.getElementById('pendencias-overlay').style
 function salvarPrefPendencias(v){ localStorage.setItem('gc3_nao_pend',v?'1':'0'); }
 
 // ═══ LOADING ═══
-function mostrarLoading(){ const o=document.getElementById('loading-overlay'); if(o){o.classList.remove('hide');} }
-function ocultarLoading(){ const o=document.getElementById('loading-overlay'); if(o){o.classList.add('hide');setTimeout(()=>{o.style.display='none';},350);} }
+function mostrarLoading(msg){ 
+  const o=document.getElementById('loading-overlay'); 
+  if(o){
+    o.style.display='flex';
+    o.classList.remove('hide');
+    const t=o.querySelector('.loading-text');
+    if(t) t.textContent=msg||'Carregando dados...';
+  } 
+}
+function ocultarLoading(){ 
+  const o=document.getElementById('loading-overlay'); 
+  if(o){o.classList.add('hide');setTimeout(()=>{o.style.display='none';},350);} 
+}
 
 // ═══ BOOT ═══
 async function boot(){
-  mostrarLoading();
+  mostrarLoading('Iniciando sistema...');
   aplicarTema(tema);
-  const user = await initFirebase();
-  if(user){
-    await loadDB();
-    atualizarSelectsGestores();
-    atualizarFiltrosGestor();
-    atualizarFiltrosAno();
-    renderPainel();
-    renderLista();
-    document.getElementById('view-login').classList.remove('active');
-    document.getElementById('view-list').classList.add('active');
-    setTimeout(mostrarPendencias, 600);
+
+  // Timeout de segurança: se o Firebase travar por mais de 8s, oculta o loading
+  const safetyTimer = setTimeout(()=>{
+    ocultarLoading();
+    console.warn('Boot timeout — Firebase demorou demais');
+  }, 8000);
+
+  try{
+    // Timeout de 6s para o initFirebase
+    const firebasePromise = initFirebase();
+    const timeoutPromise = new Promise(resolve => setTimeout(()=>resolve(null), 6000));
+    const user = await Promise.race([firebasePromise, timeoutPromise]);
+
+    clearTimeout(safetyTimer);
+
+    if(user){
+      mostrarLoading('Carregando contratos...');
+      await loadDB();
+      atualizarSelectsGestores();
+      atualizarFiltrosGestor();
+      atualizarFiltrosAno();
+      renderPainel();
+      renderLista();
+      document.getElementById('view-login').classList.remove('active');
+      document.getElementById('view-list').classList.add('active');
+      setTimeout(mostrarPendencias, 600);
+    } else {
+      // Não logado ou timeout — mostra tela de login
+      document.getElementById('view-login').classList.add('active');
+    }
+  } catch(e){
+    clearTimeout(safetyTimer);
+    console.error('Erro no boot:', e);
+    // Em caso de qualquer erro, garante que a tela de login aparece
+    document.getElementById('view-login').classList.add('active');
+  } finally {
+    ocultarLoading();
   }
-  ocultarLoading();
 }
 boot();
 </script>
