@@ -2240,8 +2240,8 @@ function renderItemCardHtml(item, c){
         <div class="action-wrap" onclick="event.stopPropagation()">
           <button class="action-btn" onclick="openActionMenu(event,this)" style="width:22px;height:22px;font-size:11px">⋯</button>
           <div class="action-dropdown-menu">
-            <div class="action-item" onclick="openModalApostilamento('${item.id}','${a.id}')">✏️ Editar</div>
-            <div class="action-item danger" onclick="excluirApostilamento('${item.id}','${a.id}')">🗑️ Excluir</div>
+            <div class="action-item" onclick="openModalApostilamento(currentContratoId,'${a.id}')">✏️ Editar</div>
+            <div class="action-item danger" onclick="excluirApostilamento('${a.id}')">🗑️ Excluir</div>
           </div>
         </div>
       </div>`;
