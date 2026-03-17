@@ -297,6 +297,51 @@ canvas{max-height:220px}
 
 /* TRUNCATE */
 .trunc{max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:help;position:relative}
+
+/* BUSCA GLOBAL */
+.global-search-wrap{flex:1;max-width:340px;position:relative}
+.global-search-input{width:100%;background:var(--bg-surface-soft);border:1px solid var(--border-light);border-radius:100px;color:var(--text-primary);font-family:var(--font-sans);font-size:12px;padding:6px 12px 6px 32px;outline:none;transition:all .18s}
+.global-search-input:focus{background:var(--bg-surface);border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-ring)}
+.global-search-input::placeholder{color:var(--text-placeholder)}
+.global-search-wrap::before{content:'';position:absolute;left:11px;top:50%;transform:translateY(-50%);width:13px;height:13px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='%23737b8c' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E");background-repeat:no-repeat;background-size:contain;pointer-events:none}
+.search-results-dropdown{position:fixed;background:var(--bg-surface);border:1px solid var(--border-light);border-radius:var(--radius-lg);box-shadow:var(--shadow-xl);z-index:9999;min-width:420px;max-width:520px;max-height:420px;overflow-y:auto;display:none}
+.search-results-dropdown.open{display:block}
+.search-group-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-tertiary);padding:8px 14px 4px}
+.search-item{display:flex;align-items:center;gap:10px;padding:8px 14px;cursor:pointer;transition:background .12s}
+.search-item:hover{background:var(--bg-surface-soft)}
+.search-item-icon{font-size:14px;flex-shrink:0;width:22px;text-align:center}
+.search-item-main{flex:1;min-width:0}
+.search-item-title{font-size:12px;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.search-item-sub{font-size:10px;color:var(--text-tertiary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.search-item-badge{font-size:10px;font-family:var(--font-mono);color:var(--text-tertiary);flex-shrink:0}
+.search-empty{padding:24px;text-align:center;font-size:12px;color:var(--text-tertiary)}
+.search-divider{height:1px;background:var(--border-light);margin:2px 0}
+
+/* LOADING */
+#loading-overlay{position:fixed;inset:0;background:var(--bg-app);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;transition:opacity .3s}
+#loading-overlay.hide{opacity:0;pointer-events:none}
+.loading-logo{width:48px;height:48px;background:var(--accent);border-radius:14px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;animation:loadPulse 1.2s ease-in-out infinite}
+@keyframes loadPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(.92);opacity:.8}}
+.loading-bar-wrap{width:200px;height:3px;background:var(--border-light);border-radius:100px;overflow:hidden}
+.loading-bar{height:100%;background:var(--accent);border-radius:100px;animation:loadBar 1.4s ease-in-out infinite}
+@keyframes loadBar{0%{width:0%;margin-left:0}50%{width:60%;margin-left:20%}100%{width:0%;margin-left:100%}}
+.loading-text{font-size:12px;color:var(--text-tertiary)}
+
+/* SAVE INDICATOR */
+#save-indicator{position:fixed;bottom:24px;left:24px;z-index:9990;font-size:11px;font-weight:500;padding:6px 12px;border-radius:100px;display:flex;align-items:center;gap:6px;opacity:0;transition:opacity .2s;pointer-events:none}
+#save-indicator.saving{background:var(--warning-soft);color:var(--warning);border:1px solid rgba(194,114,10,.2);opacity:1}
+#save-indicator.saved{background:var(--success-soft);color:var(--success);border:1px solid rgba(5,150,105,.2);opacity:1}
+#save-indicator.error{background:var(--danger-soft);color:var(--danger);border:1px solid rgba(212,43,43,.2);opacity:1}
+
+/* SORT */
+th.sortable{cursor:pointer;user-select:none;white-space:nowrap}
+th.sortable:hover{color:var(--text-primary)}
+th.sortable::after{content:' ⇅';font-size:9px;opacity:.4}
+th.sort-asc::after{content:' ↑';opacity:1;color:var(--accent)}
+th.sort-desc::after{content:' ↓';opacity:1;color:var(--accent)}
+
+/* DIAS VENCIMENTO */
+.dias-badge{font-size:9px;margin-top:2px;font-weight:500}
 .obj-tooltip{position:fixed;background:var(--text-primary);color:var(--bg-surface);font-size:11px;padding:6px 10px;border-radius:var(--radius-md);max-width:320px;white-space:normal;line-height:1.5;z-index:9999;pointer-events:none;box-shadow:var(--shadow-lg);opacity:0;transition:opacity .15s}
 .obj-tooltip.show{opacity:1}
 
@@ -398,6 +443,19 @@ canvas{max-height:220px}
   </div>
 </div>
 
+<!-- ═══ LOADING OVERLAY ═══ -->
+<div id="loading-overlay">
+  <div class="loading-logo">📋</div>
+  <div class="loading-bar-wrap"><div class="loading-bar"></div></div>
+  <div class="loading-text">Carregando dados...</div>
+</div>
+
+<!-- ═══ SAVE INDICATOR ═══ -->
+<div id="save-indicator"></div>
+
+<!-- ═══ BUSCA GLOBAL DROPDOWN ═══ -->
+<div id="search-dropdown" class="search-results-dropdown"></div>
+
 <!-- ═══ LIST VIEW ═══ -->
 <div id="view-list">
 <header>
@@ -406,6 +464,9 @@ canvas{max-height:220px}
     <div><div class="logo-text">GestãoContratos</div><div class="logo-sub">Controle de Contratos da Área</div></div>
   </a>
   <div class="spacer"></div>
+  <div class="global-search-wrap">
+    <input class="global-search-input" id="global-search" type="text" placeholder="Buscar contrato, fornecedor, empenho, NF..." autocomplete="off" oninput="buscaGlobal(this.value)" onfocus="buscaGlobal(this.value)" onblur="setTimeout(fecharBuscaGlobal,200)">
+  </div>
   <button class="hbtn" onclick="toggleTema()" id="btn-tema" title="Alternar tema">🌙</button>
   <button class="hbtn" onclick="fazerLogout()" id="btn-logout" title="Sair do sistema" style="color:var(--danger)">🚪</button>
 </header>
@@ -480,9 +541,17 @@ canvas{max-height:220px}
     </div>
     <div class="table-wrapper">
       <table><thead><tr>
-        <th>Nº Contrato</th><th>Objeto</th><th>Fornecedor</th>
-        <th>Gestor</th><th>Substituto</th><th>Vigência</th><th>Status</th>
-        <th class="money">Valor Total</th><th class="money">Empenhado</th><th class="money">Pago</th><th>Ações</th>
+        <th class="sortable" onclick="sortLista('numero')">Nº Contrato</th>
+        <th>Objeto</th>
+        <th class="sortable" onclick="sortLista('fornecedor')">Fornecedor</th>
+        <th class="sortable" onclick="sortLista('gestor')">Gestor</th>
+        <th>Substituto</th>
+        <th class="sortable" onclick="sortLista('fim')">Vigência</th>
+        <th>Status</th>
+        <th class="money sortable" onclick="sortLista('valor')">Valor Total</th>
+        <th class="money sortable" onclick="sortLista('emp')">Empenhado</th>
+        <th class="money sortable" onclick="sortLista('pago')">Pago</th>
+        <th>Ações</th>
       </tr></thead>
       <tbody id="tbody-contratos"><tr><td colspan="11" style="text-align:center;padding:40px;color:var(--text-tertiary)">Nenhum contrato cadastrado.</td></tr></tbody>
       </table>
@@ -944,7 +1013,21 @@ async function initFirebase(){
 }
 
 async function saveDB(){
-  if(window._saveDocFn) await window._saveDocFn(DB);
+  const ind=document.getElementById('save-indicator');
+  if(ind){ind.className='saving';ind.innerHTML='⏳ Salvando...';}
+  try{
+    if(window._saveDocFn) await window._saveDocFn(DB);
+    if(ind){
+      ind.className='saved';ind.innerHTML='✅ Salvo';
+      setTimeout(()=>{ind.className='';ind.innerHTML='';},2000);
+    }
+  }catch(e){
+    if(ind){
+      ind.className='error';ind.innerHTML='❌ Erro ao salvar';
+      setTimeout(()=>{ind.className='';ind.innerHTML='';},4000);
+    }
+    toast('Erro ao salvar no Firebase. Verifique sua conexão.','error');
+  }
 }
 
 async function loadDB(){
@@ -2152,10 +2235,15 @@ function renderPainel(){
       const barColor=pct>=100?'var(--danger)':pct>=75?'var(--success)':'var(--accent)';
       const taCount=(c.termosAditivos||[]).length;
       return`<tr onclick="showDetail('${c.id}')" style="cursor:pointer">
-        <td class="hi mono">${c.numero}${taCount>0?` <span class="badge badge-purple" style="font-size:9px">${taCount}TA</span>`:''}</td>
+        <td class="hi mono" onclick="event.stopPropagation();showDetail('${c.id}')" style="cursor:pointer">
+          <span style="color:var(--accent);text-decoration:underline;text-underline-offset:2px">${c.numero||'—'}</span>${taCount>0?` <span class="badge badge-purple" style="font-size:9px">${taCount}TA</span>`:''}
+        </td>
         <td>${c.fornecedor}</td>
         <td>${c.gestor||'—'}</td>
-        <td class="mono" style="font-size:10px">${fmtD(ve.inicio)}→${fmtD(ve.fim)}</td>
+        <td class="mono" style="font-size:10px">
+          ${fmtD(ve.inicio)}→${fmtD(ve.fim)}
+          ${(()=>{const d=diasVencimento(ve.fim);return d?`<div class="dias-badge" style="color:${d.cor}">${d.txt}</div>`:''})()}
+        </td>
         <td><span class="badge ${sv.cls}">${sv.label}</span></td>
         <td class="money">${fmt(val)}</td>
         <td class="money">${fmt(emp)}</td>
@@ -2215,17 +2303,23 @@ function renderLista(){
 
   const tbody=document.getElementById('tbody-contratos');
   if(!lista.length){tbody.innerHTML='<tr><td colspan="11" style="text-align:center;padding:40px;color:var(--text-tertiary)">Nenhum contrato encontrado.</td></tr>';return;}
-  tbody.innerHTML=lista.map(c=>{
+  tbody.innerHTML=aplicarSort(lista).map(c=>{
     const ve=vigenciaEfetiva(c);
     const sv=svStatus(ve.fim),val=calcValor(c),emp=calcEmp(c),pago=calcPago(c);
     const taCount=(c.termosAditivos||[]).length;
+    const diasInfo=diasVencimento(ve.fim);
     return`<tr onclick="showDetail('${c.id}')" style="cursor:pointer">
-      <td class="hi mono">${c.numero}${taCount>0?` <span class="badge badge-purple" style="font-size:9px">${taCount} TA</span>`:''}</td>
+      <td class="hi mono" onclick="event.stopPropagation();showDetail('${c.id}')" style="cursor:pointer">
+        <span style="color:var(--accent);text-decoration:underline;text-underline-offset:2px">${c.numero||'—'}</span>${taCount>0?` <span class="badge badge-purple" style="font-size:9px">${taCount} TA</span>`:''}
+      </td>
       <td class="trunc" onmouseenter="showObjTooltip(event,'${(c.objeto||'').replace(/'/g,"&#39;")}')" onmouseleave="hideObjTooltip()" onmousemove="moveObjTooltip(event)">${c.objeto||'—'}</td>
       <td class="hi">${c.fornecedor}</td>
       <td>${c.gestor||'—'}</td>
       <td>${c.substituto||'—'}</td>
-      <td class="mono" style="font-size:10px">${fmtD(ve.inicio)} → ${fmtD(ve.fim)}</td>
+      <td class="mono" style="font-size:10px">
+        ${fmtD(ve.inicio)} → ${fmtD(ve.fim)}
+        ${diasInfo?`<div class="dias-badge" style="color:${diasInfo.cor}">${diasInfo.txt}</div>`:''}
+      </td>
       <td><span class="badge ${sv.cls}">${sv.label}</span></td>
       <td class="money">${val?fmt(val):'—'}</td>
       <td class="money">${emp?fmt(emp):'—'}</td>
@@ -2977,12 +3071,130 @@ document.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('login-email')?.addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('login-senha')?.focus(); });
 });
 
+// ═══ DIAS ATÉ VENCIMENTO ═══
+function diasVencimento(dataFim){
+  if(!dataFim) return null;
+  const hoje=new Date(); hoje.setHours(0,0,0,0);
+  const fim=new Date(dataFim+'T00:00:00');
+  const dias=Math.ceil((fim-hoje)/86400000);
+  if(dias<0) return{txt:`vencido há ${Math.abs(dias)}d`,cor:'var(--danger)'};
+  if(dias===0) return{txt:'vence hoje',cor:'var(--danger)'};
+  if(dias<=30) return{txt:`vence em ${dias}d`,cor:'var(--danger)'};
+  if(dias<=90) return{txt:`vence em ${dias}d`,cor:'var(--warning)'};
+  return{txt:`vence em ${dias}d`,cor:'var(--text-tertiary)'};
+}
+
+// ═══ SORT TABELA DE CONTRATOS ═══
+let _sortCol='', _sortDir=1;
+function sortLista(col){
+  if(_sortCol===col) _sortDir*=-1;
+  else{_sortCol=col;_sortDir=1;}
+  // Atualiza visual dos cabeçalhos
+  document.querySelectorAll('th.sortable').forEach(th=>{
+    th.classList.remove('sort-asc','sort-desc');
+    if(th.getAttribute('onclick')===`sortLista('${col}')`){
+      th.classList.add(_sortDir===1?'sort-asc':'sort-desc');
+    }
+  });
+  renderLista();
+}
+function aplicarSort(lista){
+  if(!_sortCol) return lista;
+  return [...lista].sort((a,b)=>{
+    let va,vb;
+    if(_sortCol==='numero'){va=a.numero||'';vb=b.numero||'';}
+    else if(_sortCol==='fornecedor'){va=a.fornecedor||'';vb=b.fornecedor||'';}
+    else if(_sortCol==='gestor'){va=a.gestor||'';vb=b.gestor||'';}
+    else if(_sortCol==='fim'){va=vigenciaEfetiva(a).fim||'';vb=vigenciaEfetiva(b).fim||'';}
+    else if(_sortCol==='valor'){va=calcValor(a);vb=calcValor(b);}
+    else if(_sortCol==='emp'){va=calcEmp(a);vb=calcEmp(b);}
+    else if(_sortCol==='pago'){va=calcPago(a);vb=calcPago(b);}
+    else return 0;
+    if(typeof va==='string') return va.localeCompare(vb)*_sortDir;
+    return(va-vb)*_sortDir;
+  });
+}
+
+// ═══ BUSCA GLOBAL ═══
+function buscaGlobal(q){
+  const dd=document.getElementById('search-dropdown');
+  const inp=document.getElementById('global-search');
+  if(!q||q.trim().length<2){dd.classList.remove('open');return;}
+  const term=q.trim().toLowerCase();
+  const results=[];
+
+  // Contratos
+  DB.contratos.forEach(c=>{
+    const match=[c.numero,c.fornecedor,c.objeto,c.gestor].some(v=>(v||'').toLowerCase().includes(term));
+    if(match) results.push({tipo:'contrato',icon:'📋',titulo:c.numero||'S/N',sub:`${c.fornecedor} · ${c.gestor||'—'}`,badge:fmt(calcValor(c)),cid:c.id});
+  });
+
+  // Empenhos
+  DB.contratos.forEach(c=>{
+    (c.empenhos||[]).forEach(e=>{
+      if((e.numero||'').toLowerCase().includes(term)||(e.sei||'').toLowerCase().includes(term)){
+        results.push({tipo:'empenho',icon:'💼',titulo:e.numero,sub:`${c.numero} · ${c.fornecedor}`,badge:fmt(e.valor),cid:c.id});
+      }
+    });
+  });
+
+  // NFs de pagamentos
+  DB.contratos.forEach(c=>{
+    (c.pagamentos||[]).forEach(p=>{
+      if((p.nf||'').toLowerCase().includes(term)||(p.sei||'').toLowerCase().includes(term)){
+        results.push({tipo:'nf',icon:'🧾',titulo:`NF ${p.nf||p.sei}`,sub:`${c.numero} · ${p.mes||''}/${p.ano||''}`,badge:fmt(p.apagar),cid:c.id});
+      }
+    });
+  });
+
+  if(!results.length){
+    dd.innerHTML='<div class="search-empty">Nenhum resultado encontrado</div>';
+  } else {
+    const grupos={contrato:'📋 Contratos',empenho:'💼 Empenhos',nf:'🧾 Notas Fiscais / SEI'};
+    let html='';
+    Object.keys(grupos).forEach(tipo=>{
+      const gr=results.filter(r=>r.tipo===tipo).slice(0,5);
+      if(!gr.length) return;
+      html+=`<div class="search-group-title">${grupos[tipo]}</div>`;
+      gr.forEach(r=>{
+        html+=`<div class="search-item" data-cid="${r.cid}" onmousedown="event.preventDefault();fecharBuscaGlobal();document.getElementById('global-search').value='';showDetail('${r.cid}')">
+          <span class="search-item-icon">${r.icon}</span>
+          <div class="search-item-main"><div class="search-item-title">${r.titulo}</div><div class="search-item-sub">${r.sub}</div></div>
+          <span class="search-item-badge">${r.badge}</span>
+        </div>`;
+      });
+      html+='<div class="search-divider"></div>';
+    });
+    dd.innerHTML=html;
+  }
+
+  // Posicionar dropdown sob o input
+  const rect=inp.getBoundingClientRect();
+  dd.style.left=rect.left+'px';
+  dd.style.top=(rect.bottom+4)+'px';
+  dd.style.width=Math.max(420,rect.width)+'px';
+  dd.classList.add('open');
+}
+
+function fecharBuscaGlobal(){
+  document.getElementById('search-dropdown')?.classList.remove('open');
+}
+
+// Fechar busca ao clicar fora
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.global-search-wrap')&&!e.target.closest('#search-dropdown')) fecharBuscaGlobal();
+});
+
+// ═══ LOADING ═══
+function mostrarLoading(){ const o=document.getElementById('loading-overlay'); if(o){o.classList.remove('hide');} }
+function ocultarLoading(){ const o=document.getElementById('loading-overlay'); if(o){o.classList.add('hide');setTimeout(()=>{o.style.display='none';},350);} }
+
 // ═══ BOOT ═══
 async function boot(){
+  mostrarLoading();
   aplicarTema(tema);
   const user = await initFirebase();
   if(user){
-    // Usuário já estava logado (sessão mantida pelo Firebase)
     await loadDB();
     atualizarSelectsGestores();
     atualizarFiltrosGestor();
@@ -2992,7 +3204,7 @@ async function boot(){
     document.getElementById('view-login').classList.remove('active');
     document.getElementById('view-list').classList.add('active');
   }
-  // Se não estiver logado, a view-login já está ativa por padrão
+  ocultarLoading();
 }
 boot();
 </script>
