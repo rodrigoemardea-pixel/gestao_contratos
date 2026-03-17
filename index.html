@@ -342,6 +342,72 @@ th.sort-desc::after{content:' ↓';opacity:1;color:var(--accent)}
 
 /* DIAS VENCIMENTO */
 .dias-badge{font-size:9px;margin-top:2px;font-weight:500}
+
+/* ANOTAÇÕES */
+.nota-item{background:var(--bg-surface-soft);border:1px solid var(--border-light);border-radius:var(--radius-lg);padding:10px 14px;margin-bottom:8px;position:relative}
+.nota-item:last-child{margin-bottom:0}
+.nota-header{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.nota-autor{font-size:10px;font-weight:600;color:var(--accent)}
+.nota-data{font-size:10px;color:var(--text-tertiary);font-family:var(--font-mono)}
+.nota-texto{font-size:12px;color:var(--text-primary);line-height:1.6;white-space:pre-wrap}
+.nota-input-wrap{display:flex;gap:8px;align-items:flex-end;margin-bottom:12px}
+.nota-input-wrap textarea{flex:1;min-height:60px;resize:vertical}
+.nota-vazia{font-size:12px;color:var(--text-tertiary);text-align:center;padding:24px;display:flex;align-items:center;justify-content:center;gap:8px}
+
+/* IA */
+.ia-card{background:linear-gradient(135deg,var(--accent-muted) 0%,var(--purple-soft) 100%);border:1px solid var(--accent-ring);border-radius:var(--radius-xl);padding:18px 20px;margin-bottom:16px}
+.ia-header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.ia-icon{width:32px;height:32px;background:var(--accent);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;flex-shrink:0}
+.ia-title{font-size:13px;font-weight:700;color:var(--text-primary);letter-spacing:-.2px}
+.ia-sub{font-size:10px;color:var(--text-tertiary)}
+.ia-body{font-size:12px;color:var(--text-primary);line-height:1.7;white-space:pre-wrap}
+.ia-loading{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text-tertiary)}
+.ia-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:iaPulse .8s ease-in-out infinite}
+.ia-dot:nth-child(2){animation-delay:.15s}
+.ia-dot:nth-child(3){animation-delay:.3s}
+@keyframes iaPulse{0%,100%{transform:scale(1);opacity:.4}50%{transform:scale(1.4);opacity:1}}
+.ia-anomalia{background:var(--danger-soft);border:1px solid rgba(212,43,43,.2);border-radius:var(--radius-md);padding:8px 12px;margin-top:8px;font-size:11px;color:var(--danger)}
+.ia-projecao{background:var(--warning-soft);border:1px solid rgba(194,114,10,.2);border-radius:var(--radius-md);padding:8px 12px;margin-top:8px;font-size:11px;color:var(--warning)}
+.ia-ok{background:var(--success-soft);border:1px solid rgba(5,150,105,.2);border-radius:var(--radius-md);padding:8px 12px;margin-top:8px;font-size:11px;color:var(--success)}
+
+/* TIMELINE HORIZONTAL */
+.htimeline-wrap{overflow-x:auto;padding:8px 0 16px;margin-bottom:16px}
+.htimeline{display:flex;align-items:flex-start;gap:0;min-width:max-content;padding:0 20px;position:relative}
+.htimeline::before{content:'';position:absolute;top:28px;left:20px;right:20px;height:2px;background:var(--border-medium);z-index:0}
+.htl-item{display:flex;flex-direction:column;align-items:center;min-width:120px;max-width:150px;position:relative;z-index:1}
+.htl-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--bg-surface);flex-shrink:0;margin-bottom:8px;box-shadow:0 0 0 2px currentColor}
+.htl-dot.original{color:var(--text-tertiary);background:var(--text-tertiary)}
+.htl-dot.ta{color:var(--accent);background:var(--accent)}
+.htl-dot.apost{color:var(--warning);background:var(--warning)}
+.htl-dot.emp{color:var(--purple);background:var(--purple)}
+.htl-dot.pgto{color:var(--success);background:var(--success)}
+.htl-card{background:var(--bg-surface);border:1px solid var(--border-light);border-radius:var(--radius-lg);padding:8px 10px;font-size:10px;text-align:center;cursor:pointer;transition:all .15s;max-width:130px}
+.htl-card:hover{box-shadow:var(--shadow-md);border-color:var(--border-medium);transform:translateY(-2px)}
+.htl-tipo{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-tertiary);margin-bottom:2px}
+.htl-nome{font-weight:600;color:var(--text-primary);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px}
+.htl-data{color:var(--text-tertiary);font-family:var(--font-mono)}
+.htl-val{color:var(--success);font-family:var(--font-mono);font-weight:600;margin-top:2px}
+.htl-connector{width:40px;height:2px;background:transparent;flex-shrink:0;margin-top:21px}
+
+/* PENDÊNCIAS */
+.pendencias-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);z-index:5000;display:flex;align-items:center;justify-content:center;padding:20px}
+.pendencias-modal{background:var(--bg-surface);border:1px solid var(--border-light);border-radius:var(--radius-2xl);width:100%;max-width:560px;max-height:85vh;overflow-y:auto;box-shadow:var(--shadow-xl);animation:modalIn .2s ease}
+.pendencias-header{padding:20px 24px 16px;border-bottom:1px solid var(--border-light)}
+.pendencias-saudacao{font-size:18px;font-weight:700;color:var(--text-primary);letter-spacing:-.4px;margin-bottom:4px}
+.pendencias-sub{font-size:12px;color:var(--text-tertiary)}
+.pendencias-body{padding:16px 24px}
+.pendencias-footer{padding:14px 24px;border-top:1px solid var(--border-light);display:flex;justify-content:flex-end}
+.pend-item{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:var(--radius-lg);margin-bottom:8px;cursor:pointer;transition:all .15s;border:1px solid transparent}
+.pend-item.danger{background:var(--danger-soft);border-color:rgba(212,43,43,.2)}
+.pend-item.warn{background:var(--warning-soft);border-color:rgba(194,114,10,.2)}
+.pend-item.info{background:var(--info-soft);border-color:rgba(0,102,255,.15)}
+.pend-item:hover{transform:translateY(-1px);box-shadow:var(--shadow-sm)}
+.pend-icon{font-size:20px;flex-shrink:0;width:32px;text-align:center}
+.pend-body{flex:1}
+.pend-title{font-size:12px;font-weight:600;color:var(--text-primary)}
+.pend-sub{font-size:10px;color:var(--text-tertiary);margin-top:1px}
+.pend-badge{font-family:var(--font-mono);font-size:11px;font-weight:600;flex-shrink:0}
+.pend-vazia{text-align:center;padding:32px;font-size:13px;color:var(--text-tertiary)}
 .obj-tooltip{position:fixed;background:var(--text-primary);color:var(--bg-surface);font-size:11px;padding:6px 10px;border-radius:var(--radius-md);max-width:320px;white-space:normal;line-height:1.5;z-index:9999;pointer-events:none;box-shadow:var(--shadow-lg);opacity:0;transition:opacity .15s}
 .obj-tooltip.show{opacity:1}
 
@@ -456,6 +522,23 @@ th.sort-desc::after{content:' ↓';opacity:1;color:var(--accent)}
 <!-- ═══ BUSCA GLOBAL DROPDOWN ═══ -->
 <div id="search-dropdown" class="search-results-dropdown"></div>
 
+<!-- ═══ MODAL PENDÊNCIAS DO DIA ═══ -->
+<div id="pendencias-overlay" class="pendencias-overlay" style="display:none" onclick="if(event.target===this)fecharPendencias()">
+  <div class="pendencias-modal">
+    <div class="pendencias-header">
+      <div class="pendencias-saudacao" id="pend-saudacao">Bom dia! 👋</div>
+      <div class="pendencias-sub" id="pend-sub">Aqui está o resumo de hoje</div>
+    </div>
+    <div class="pendencias-body" id="pend-body"></div>
+    <div class="pendencias-footer">
+      <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-tertiary);cursor:pointer;margin-right:auto">
+        <input type="checkbox" id="pend-nao-mostrar" onchange="salvarPrefPendencias(this.checked)"> Não mostrar automaticamente ao entrar
+      </label>
+      <button class="btn btn-primary" onclick="fecharPendencias()">Entendido</button>
+    </div>
+  </div>
+</div>
+
 <!-- ═══ LIST VIEW ═══ -->
 <div id="view-list">
 <header>
@@ -467,6 +550,7 @@ th.sort-desc::after{content:' ↓';opacity:1;color:var(--accent)}
   <div class="global-search-wrap">
     <input class="global-search-input" id="global-search" type="text" placeholder="Buscar contrato, fornecedor, empenho, NF..." autocomplete="off" oninput="buscaGlobal(this.value)" onfocus="buscaGlobal(this.value)" onblur="setTimeout(fecharBuscaGlobal,200)">
   </div>
+  <button class="hbtn" onclick="abrirPendencias()" title="Pendências do dia" style="position:relative" id="btn-pendencias">🔔</button>
   <button class="hbtn" onclick="toggleTema()" id="btn-tema" title="Alternar tema">🌙</button>
   <button class="hbtn" onclick="fazerLogout()" id="btn-logout" title="Sair do sistema" style="color:var(--danger)">🚪</button>
 </header>
@@ -619,6 +703,9 @@ th.sort-desc::after{content:' ↓';opacity:1;color:var(--accent)}
     <div style="display:flex;align-items:center;gap:0;margin-bottom:14px;border-bottom:2px solid var(--border-light)">
       <button class="gl-tab active" id="gl-tab-emp" onclick="switchGlobalTab('emp')">Empenhos <span class="section-count" id="gl-count-emp">0</span></button>
       <button class="gl-tab" id="gl-tab-pgto" onclick="switchGlobalTab('pgto')">Pagamentos <span class="section-count" id="gl-count-pgto">0</span></button>
+      <button class="gl-tab" id="gl-tab-timeline" onclick="switchGlobalTab('timeline')">⏱ Timeline</button>
+      <button class="gl-tab" id="gl-tab-ia" onclick="switchGlobalTab('ia')">🤖 Análise IA</button>
+      <button class="gl-tab" id="gl-tab-notas" onclick="switchGlobalTab('notas')">📝 Anotações <span class="section-count" id="gl-count-notas">0</span></button>
     </div>
 
     <!-- FILTROS EMPENHOS -->
@@ -668,9 +755,32 @@ th.sort-desc::after{content:' ↓';opacity:1;color:var(--accent)}
         </table>
       </div>
     </div>
+    <!-- PAINEL TIMELINE -->
+    <div id="gl-pane-timeline" style="display:none">
+      <div id="htimeline-container"></div>
+    </div>
+
+    <!-- PAINEL IA -->
+    <div id="gl-pane-ia" style="display:none">
+      <div id="ia-container">
+        <div style="text-align:center;padding:32px 20px">
+          <div style="font-size:32px;margin-bottom:12px">🤖</div>
+          <div style="font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:6px">Análise Inteligente do Contrato</div>
+          <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:20px;max-width:400px;margin-left:auto;margin-right:auto">A IA analisa execução financeira, detecta anomalias, projeta encerramento do saldo e gera um diagnóstico completo.</div>
+          <button class="btn btn-primary" onclick="analisarContrato()">🤖 Gerar Análise</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAINEL ANOTAÇÕES -->
+    <div id="gl-pane-notas" style="display:none">
+      <div class="nota-input-wrap">
+        <textarea class="fc" id="nova-nota-texto" placeholder="Registre uma pendência, contato, observação..." rows="3"></textarea>
+        <button class="btn btn-primary" onclick="salvarNota()" style="flex-shrink:0;align-self:flex-end">+ Adicionar</button>
+      </div>
+      <div id="lista-notas"></div>
+    </div>
   </div>
-</div>
-</div><!-- /view-detail -->
 
 <div id="toast"></div>
 
@@ -710,6 +820,10 @@ th.sort-desc::after{content:' ↓';opacity:1;color:var(--accent)}
         </div>
       </div>
       <div style="margin-top:8px;font-size:11px;color:var(--text-tertiary)">ℹ️ O valor do contrato é calculado automaticamente pela soma dos itens.</div>
+      <div style="margin-top:14px;border-top:1px solid var(--border-light);padding-top:14px">
+        <label class="fl" style="margin-bottom:6px;display:block">Observações / Notas internas</label>
+        <textarea class="fc" id="c-obs-interna" rows="3" placeholder="Informações internas, pendências, contatos relevantes..."></textarea>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('contrato')">Cancelar</button>
@@ -1258,6 +1372,7 @@ function openModalContrato(id){
     document.getElementById('c-gestor').value=c.gestor||'';
     document.getElementById('c-substituto').value=c.substituto||'';
     document.getElementById('c-prazo-max-renovacao').value=c.prazoMaxRenovacao!=null?c.prazoMaxRenovacao:'';
+    document.getElementById('c-obs-interna').value=c.obsInterna||'';
     // carregar itens existentes para edição
     cItensTemp=JSON.parse(JSON.stringify(c.itens||[]));
     sincGestores();
@@ -1269,6 +1384,7 @@ function openModalContrato(id){
     document.getElementById('c-gestor').value='';
     document.getElementById('c-substituto').value='';
     document.getElementById('c-prazo-max-renovacao').value='';
+    document.getElementById('c-obs-interna').value='';
     // começar com 1 item vazio
     cItensTemp=[{id:uid(),nome:'',tipo:'CUSTEIO',valor:0,empenhos:[],pagamentos:[],apostilamentos:[]}];
   }
@@ -1292,6 +1408,7 @@ function salvarContrato(){
     gestor:document.getElementById('c-gestor').value,
     substituto:document.getElementById('c-substituto').value,
     prazoMaxRenovacao:document.getElementById('c-prazo-max-renovacao').value!==''?parseInt(document.getElementById('c-prazo-max-renovacao').value)||0:null,
+    obsInterna:document.getElementById('c-obs-interna').value.trim(),
     itens:itensValidos.map(it=>({
       ...it,
       nome:uc(it.nome),
@@ -2422,8 +2539,10 @@ function renderDetail(){
           <span class="badge ${sv.cls}">${sv.label}</span>
           ${taCount>0?`<span class="badge badge-purple">📎 ${taCount} Termo${taCount>1?'s':''} Aditivo${taCount>1?'s':''}</span>`:''}
           ${temApost?`<span class="badge badge-warn">📝 ${(c.apostilamentos||[]).length} Apostilamento${(c.apostilamentos||[]).length>1?'s':''}</span>`:''}
+          ${(c.notas||[]).length?`<span class="badge badge-gray" onclick="switchGlobalTab('notas')" style="cursor:pointer">💬 ${c.notas.length} nota${c.notas.length>1?'s':''}</span>`:''}
         </div>
         <div class="hero-sub">${c.objeto||'—'}</div>
+        ${c.obsInterna?`<div style="margin-top:6px;font-size:11px;color:var(--warning);background:var(--warning-soft);border:1px solid rgba(194,114,10,.2);border-radius:var(--radius-md);padding:5px 10px;display:inline-flex;align-items:center;gap:5px">📌 ${c.obsInterna}</div>`:''}
         <div class="hero-meta">
           <div class="hero-meta-item"><div class="hero-meta-key">Gestor</div><div class="hero-meta-val">${c.gestor||'—'}</div></div>
           <div class="hero-meta-item"><div class="hero-meta-key">Substituto</div><div class="hero-meta-val">${c.substituto||'—'}</div></div>
@@ -2602,6 +2721,10 @@ function renderDetail(){
   }
 
   atualizarGlobalFilters(); renderGlobal();
+  // Atualizar badge de notas
+  const c2=DB.contratos.find(x=>x.id===currentContratoId);
+  const badge=document.getElementById('gl-count-notas');
+  if(badge&&c2) badge.textContent=(c2.notas||[]).length||'';
 }
 
 function toggleMovTab(btn,...hideIds){
@@ -2623,13 +2746,16 @@ let globalTab='emp'; // 'emp' | 'pgto'
 
 function switchGlobalTab(tab){
   globalTab=tab;
-  document.getElementById('gl-tab-emp').classList.toggle('active',tab==='emp');
-  document.getElementById('gl-tab-pgto').classList.toggle('active',tab==='pgto');
-  document.getElementById('gl-pane-emp').style.display=tab==='emp'?'':'none';
-  document.getElementById('gl-pane-pgto').style.display=tab==='pgto'?'':'none';
-  document.getElementById('gl-filters-emp').style.display=tab==='emp'?'':'none';
-  document.getElementById('gl-filters-pgto').style.display=tab==='pgto'?'':'none';
-  renderGlobal();
+  ['emp','pgto','timeline','ia','notas'].forEach(t=>{
+    document.getElementById('gl-tab-'+t)?.classList.toggle('active',tab===t);
+    const pane=document.getElementById('gl-pane-'+t);
+    if(pane) pane.style.display=tab===t?'':'none';
+    const filt=document.getElementById('gl-filters-'+t);
+    if(filt) filt.style.display=tab===t?'':'none';
+  });
+  if(tab==='timeline') renderTimeline();
+  if(tab==='notas') renderNotas();
+  if(tab==='emp'||tab==='pgto') renderGlobal();
 }
 
 function atualizarGlobalFilters(){
@@ -3044,7 +3170,7 @@ async function fazerLogin(){
     renderLista();
     document.getElementById('view-login').classList.remove('active');
     document.getElementById('view-list').classList.add('active');
-  } catch(e){
+    setTimeout(mostrarPendencias, 600);
     erroEl.textContent = e.code==='auth/invalid-credential'||e.code==='auth/wrong-password'||e.code==='auth/user-not-found'
       ? 'E-mail ou senha inválidos.' : 'Erro ao entrar. Tente novamente.';
     btn.disabled=false; btn.textContent='Entrar';
@@ -3185,6 +3311,219 @@ document.addEventListener('click',e=>{
   if(!e.target.closest('.global-search-wrap')&&!e.target.closest('#search-dropdown')) fecharBuscaGlobal();
 });
 
+// ═══ TIMELINE HORIZONTAL ═══
+function renderTimeline(){
+  const c=DB.contratos.find(x=>x.id===currentContratoId); if(!c) return;
+  const el=document.getElementById('htimeline-container'); if(!el) return;
+
+  const entries=[];
+  entries.push({tipo:'original',label:'Contrato Original',data:c.inicio,data2:c.fim,val:calcValor(c),info:`Vigência: ${fmtD(c.inicio)} → ${fmtD(c.fim)}`});
+  (c.termosAditivos||[]).forEach((ta,i)=>entries.push({tipo:'ta',label:`TA ${i+1}`,data:ta.dataAssinatura||ta.inicio,data2:ta.fim,val:ta.valor?pv(ta.valor):null,info:ta.obs||ta.objeto||''}));
+  (c.apostilamentos||[]).forEach((a,i)=>{
+    (c.itens||[]).forEach(it=>{
+      const found=(it.apostilamentos||[]).find(x=>x.id===a.id);
+      if(found) entries.push({tipo:'apost',label:`Apostilamento`,data:found.data,val:found.novoValor,info:`${found.percentual>=0?'+':''}${pv(found.percentual).toFixed(2)}% — ${it.nome}`});
+    });
+  });
+  (c.empenhos||[]).forEach(e=>entries.push({tipo:'emp',label:e.numero,data:e.data||e.ano+'-01-01',val:e.valor,info:`Empenho ${e.ano}`}));
+  (c.pagamentos||[]).forEach(p=>{
+    const m=MESES_CURTOS.indexOf((p.mes||'').toUpperCase());
+    const d=p.ano&&m>=0?`${p.ano}-${String(m+1).padStart(2,'0')}-01`:null;
+    if(d) entries.push({tipo:'pgto',label:`${p.mes}/${p.ano}`,data:d,val:p.apagar,info:`NF: ${p.nf||'—'}`});
+  });
+  entries.sort((a,b)=>(a.data||'').localeCompare(b.data||''));
+
+  const cores={original:'var(--text-tertiary)',ta:'var(--accent)',apost:'var(--warning)',emp:'var(--purple)',pgto:'var(--success)'};
+  const icones={original:'📋',ta:'📎',apost:'📝',emp:'💼',pgto:'💰'};
+
+  el.innerHTML=`<div style="font-size:10px;color:var(--text-tertiary);margin-bottom:8px;padding:0 4px">
+    ${['original','ta','apost','emp','pgto'].map(t=>`<span style="display:inline-flex;align-items:center;gap:4px;margin-right:12px"><span style="width:8px;height:8px;border-radius:50%;background:${cores[t]};display:inline-block"></span>${icones[t]} ${({original:'Contrato',ta:'Termo Aditivo',apost:'Apostilamento',emp:'Empenho',pgto:'Pagamento'})[t]}</span>`).join('')}
+  </div>
+  <div class="htimeline-wrap"><div class="htimeline">${entries.map((e,i)=>`
+    ${i>0?'<div class="htl-connector"></div>':''}
+    <div class="htl-item">
+      <div class="htl-dot ${e.tipo}" style="background:${cores[e.tipo]};box-shadow:0 0 0 2px ${cores[e.tipo]}40"></div>
+      <div class="htl-card" title="${e.info}" onclick="void(0)">
+        <div class="htl-tipo" style="color:${cores[e.tipo]}">${icones[e.tipo]} ${({original:'Original',ta:'Termo Ad.',apost:'Apostil.',emp:'Empenho',pgto:'Pagamento'})[e.tipo]}</div>
+        <div class="htl-nome">${e.label}</div>
+        <div class="htl-data">${e.data?fmtD(e.data):'—'}</div>
+        ${e.val!=null?`<div class="htl-val">${fmt(e.val)}</div>`:''}
+      </div>
+    </div>`).join('')}</div></div>`;
+}
+
+// ═══ ANOTAÇÕES ═══
+function renderNotas(){
+  const c=DB.contratos.find(x=>x.id===currentContratoId); if(!c) return;
+  const notas=c.notas||[];
+  const el=document.getElementById('lista-notas'); if(!el) return;
+  const badge=document.getElementById('gl-count-notas');
+  if(badge) badge.textContent=notas.length||'';
+  if(!notas.length){
+    el.innerHTML='<div class="nota-vazia">💬 Nenhuma anotação ainda. Registre pendências, contatos ou observações acima.</div>';
+    return;
+  }
+  el.innerHTML=[...notas].reverse().map(n=>`
+    <div class="nota-item">
+      <div class="nota-header">
+        <span class="nota-autor">👤 ${n.autor||'Usuário'}</span>
+        <span class="nota-data">${n.data?new Date(n.data).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—'}</span>
+        <div style="margin-left:auto"><button class="btn btn-ghost btn-xs" style="color:var(--danger)" onclick="excluirNota('${n.id}')">🗑</button></div>
+      </div>
+      <div class="nota-texto">${n.texto}</div>
+    </div>`).join('');
+}
+
+function salvarNota(){
+  const txt=document.getElementById('nova-nota-texto').value.trim();
+  if(!txt){toast('Digite o texto da anotação','error');return;}
+  const c=DB.contratos.find(x=>x.id===currentContratoId); if(!c) return;
+  if(!c.notas) c.notas=[];
+  const autor=_currentUser?.email||'Usuário';
+  c.notas.push({id:uid(),texto:txt,autor,data:new Date().toISOString()});
+  document.getElementById('nova-nota-texto').value='';
+  saveDB(); renderNotas(); toast('Anotação salva!','success');
+}
+
+function excluirNota(notaId){
+  if(!confirm('Excluir esta anotação?')) return;
+  const c=DB.contratos.find(x=>x.id===currentContratoId); if(!c) return;
+  c.notas=(c.notas||[]).filter(n=>n.id!==notaId);
+  saveDB(); renderNotas();
+}
+
+// ═══ ANÁLISE IA ═══
+async function analisarContrato(){
+  const c=DB.contratos.find(x=>x.id===currentContratoId); if(!c) return;
+  const el=document.getElementById('ia-container'); if(!el) return;
+
+  el.innerHTML=`<div class="ia-card"><div class="ia-header"><div class="ia-icon">🤖</div><div><div class="ia-title">Analisando contrato...</div><div class="ia-sub">Aguarde alguns segundos</div></div></div>
+    <div class="ia-loading"><div class="ia-dot"></div><div class="ia-dot"></div><div class="ia-dot"></div><span>Processando dados financeiros...</span></div></div>`;
+
+  // Montar contexto para a IA
+  const ve=vigenciaEfetiva(c);
+  const val=calcValor(c), emp=calcEmp(c), pago=calcPago(c), saldo=emp-pago;
+  const pctExec=val>0?((pago/val)*100).toFixed(1):0;
+  const diasFim=ve.fim?Math.ceil((new Date(ve.fim+'T00:00:00')-new Date())/(86400000)):null;
+  const mediaMensal=mediaMensalPgto(c,6);
+  const mesesCobertos=mediaMensal>0?(saldo/mediaMensal).toFixed(1):'N/A';
+  const pgtos=c.pagamentos||[];
+  const empenhos=c.empenhos||[];
+  const ultimosPgtos=pgtos.slice(-6).map(p=>`${p.mes||'?'}/${p.ano||'?'}: ${fmt(p.apagar)}`).join(', ');
+  const glosaTotal=pgtos.reduce((s,p)=>s+pv(p.glosa),0);
+
+  const prompt=`Você é um especialista em gestão de contratos públicos. Analise o seguinte contrato e gere um diagnóstico executivo em português:
+
+CONTRATO: ${c.numero} — ${c.fornecedor}
+OBJETO: ${c.objeto||'—'}
+GESTOR: ${c.gestor||'—'}
+VIGÊNCIA: ${fmtD(c.inicio)} → ${fmtD(ve.fim)}${diasFim!=null?' ('+Math.abs(diasFim)+'d '+(diasFim<0?'vencido':'restantes')+')':''}
+VALOR TOTAL: ${fmt(val)}
+TOTAL EMPENHADO: ${fmt(emp)}
+TOTAL PAGO: ${fmt(pago)}
+SALDO EMPENHO: ${fmt(saldo)}
+% EXECUÇÃO: ${pctExec}%
+MÉDIA MENSAL (últimos 6 meses): ${fmt(mediaMensal)}
+SALDO COBRE: ${mesesCobertos} meses no ritmo atual
+ÚLTIMOS PAGAMENTOS: ${ultimosPgtos||'Nenhum'}
+TOTAL GLOSAS: ${fmt(glosaTotal)}
+Nº EMPENHOS: ${empenhos.length}
+Nº PAGAMENTOS: ${pgtos.length}
+Nº TERMOS ADITIVOS: ${(c.termosAditivos||[]).length}
+OBS INTERNAS: ${c.obsInterna||'Nenhuma'}
+
+Gere um diagnóstico com:
+1. SITUAÇÃO GERAL (1-2 frases diretas)
+2. PONTOS DE ATENÇÃO (liste apenas os existentes, no máximo 4)
+3. PROJEÇÃO (quando o saldo se esgota, se o contrato cobre o período)
+4. RECOMENDAÇÃO (1 ação prioritária)
+
+Seja direto, use números reais do contrato, evite frases genéricas. Use linguagem de gestor público.`;
+
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+    const data=await resp.json();
+    const texto=data.content?.[0]?.text||'Não foi possível gerar a análise.';
+    el.innerHTML=`<div class="ia-card">
+      <div class="ia-header">
+        <div class="ia-icon">🤖</div>
+        <div><div class="ia-title">Diagnóstico — ${c.numero}</div><div class="ia-sub">${new Date().toLocaleString('pt-BR')}</div></div>
+        <button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="analisarContrato()">↻ Reanalisar</button>
+      </div>
+      <div class="ia-body">${texto}</div>
+    </div>`;
+  }catch(e){
+    el.innerHTML=`<div class="ia-card"><div class="ia-body" style="color:var(--danger)">Erro ao conectar com a IA. Verifique sua conexão e tente novamente.</div></div>`;
+  }
+}
+
+// ═══ PENDÊNCIAS DO DIA ═══
+function mostrarPendencias(){
+  const naoMostrar=localStorage.getItem('gc3_nao_pend')==='1';
+  if(naoMostrar) return;
+  abrirPendencias();
+}
+
+function abrirPendencias(){
+  const hora=new Date().getHours();
+  const saud=hora<12?'Bom dia':hora<18?'Boa tarde':'Boa noite';
+  const nome=_currentUser?.email?.split('@')[0]||'Gestor';
+  document.getElementById('pend-saudacao').textContent=`${hora<12?'☀️':hora<18?'🌤':'🌙'} ${saud}, ${nome}!`;
+  const items=[];
+
+  DB.contratos.forEach(c=>{
+    const ve=vigenciaEfetiva(c);
+    const st=svStatus(ve.fim);
+    // Vencendo em 30 dias
+    if(st.st==='a_vencer'){
+      const dias=ve.fim?Math.ceil((new Date(ve.fim+'T00:00:00')-new Date())/86400000):999;
+      if(dias<=30) items.push({tipo:'danger',icon:'🔴',titulo:`${c.numero} — vence em ${dias} dia${dias!==1?'s':''}`,sub:c.fornecedor,val:fmt(calcValor(c)),id:c.id});
+      else items.push({tipo:'warn',icon:'🟡',titulo:`${c.numero} — vence em ${dias} dias`,sub:c.fornecedor,val:fmt(calcValor(c)),id:c.id});
+    }
+    // Saldo crítico
+    const saldo=calcEmp(c)-calcPago(c);
+    const media=mediaMensalPgto(c,6);
+    if(media>0&&(saldo/media)<2&&st.st!=='vencido')
+      items.push({tipo:'warn',icon:'⚡',titulo:`${c.numero} — saldo cobre menos de 2 meses`,sub:`Saldo: ${fmt(saldo)} · Média: ${fmt(media)}/mês`,val:'',id:c.id});
+    // Sem pagamento há 60+ dias
+    const ult=ultimoPgtoYM(c);
+    const agora=ymAtual();
+    if(ult!==null&&(agora-ult)>=2&&st.st!=='vencido')
+      items.push({tipo:'info',icon:'🔕',titulo:`${c.numero} — sem pagamento há ${agora-ult} mês(es)`,sub:c.fornecedor,val:'',id:c.id});
+    // Notas recentes (últimas 24h)
+    const novasNotas=(c.notas||[]).filter(n=>{const d=new Date(n.data);return(Date.now()-d.getTime())<86400000;});
+    if(novasNotas.length) items.push({tipo:'info',icon:'📝',titulo:`${c.numero} — ${novasNotas.length} anotação(ões) nova(s)`,sub:novasNotas[0].texto.slice(0,60)+'...',val:'',id:c.id});
+  });
+
+  const body=document.getElementById('pend-body');
+  const sub=document.getElementById('pend-sub');
+  if(!items.length){
+    body.innerHTML='<div class="pend-vazia">✅ Tudo em ordem! Nenhuma pendência crítica hoje.</div>';
+    sub.textContent='Nenhuma pendência crítica hoje';
+  } else {
+    sub.textContent=`${items.length} item${items.length!==1?'s':''} precisam de atenção`;
+    body.innerHTML=items.slice(0,8).map(it=>`
+      <div class="pend-item ${it.tipo}" onclick="fecharPendencias();showDetail('${it.id}')">
+        <span class="pend-icon">${it.icon}</span>
+        <div class="pend-body"><div class="pend-title">${it.titulo}</div><div class="pend-sub">${it.sub}</div></div>
+        ${it.val?`<span class="pend-badge" style="color:var(--text-tertiary)">${it.val}</span>`:''}
+      </div>`).join('');
+  }
+  document.getElementById('pend-nao-mostrar').checked=localStorage.getItem('gc3_nao_pend')==='1';
+  document.getElementById('pendencias-overlay').style.display='flex';
+}
+
+function fecharPendencias(){ document.getElementById('pendencias-overlay').style.display='none'; }
+function salvarPrefPendencias(v){ localStorage.setItem('gc3_nao_pend',v?'1':'0'); }
+
 // ═══ LOADING ═══
 function mostrarLoading(){ const o=document.getElementById('loading-overlay'); if(o){o.classList.remove('hide');} }
 function ocultarLoading(){ const o=document.getElementById('loading-overlay'); if(o){o.classList.add('hide');setTimeout(()=>{o.style.display='none';},350);} }
@@ -3203,6 +3542,7 @@ async function boot(){
     renderLista();
     document.getElementById('view-login').classList.remove('active');
     document.getElementById('view-list').classList.add('active');
+    setTimeout(mostrarPendencias, 600);
   }
   ocultarLoading();
 }
