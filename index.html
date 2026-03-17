@@ -568,7 +568,7 @@ canvas{max-height:220px}
       <div class="table-wrapper" style="max-height:360px;margin-bottom:0">
         <table><thead><tr>
           <th>Empenho</th><th>Mês/Ano</th><th>Nº NF</th><th>Processo SEI</th>
-          <th class="money">Valor</th><th class="money">Glosa</th><th class="money">A Pagar</th><th>Obs</th><th>Ações</th>
+          <th class="money">Valor</th><th class="money">Glosa</th><th class="money">Pago</th><th>Obs</th><th>Ações</th>
         </tr></thead>
         <tbody id="tbody-pagamentos"><tr><td colspan="9" style="text-align:center;padding:30px;color:var(--text-tertiary)">Nenhum pagamento.</td></tr></tbody>
         </table>
@@ -2658,7 +2658,21 @@ function renderGlobal(){
     const totVal=pagamentos.reduce((s,p)=>s+pv(p.valor),0);
     const totGlosa=pagamentos.reduce((s,p)=>s+pv(p.glosa),0);
     const totPagar=pagamentos.reduce((s,p)=>s+pv(p.apagar),0);
-    tbPgto.innerHTML+=`<tr class="total-row"><td colspan="4">Total (${pagamentos.length} pagamento${pagamentos.length!==1?'s':''})</td><td class="money">${fmt(totVal)}</td><td class="money" style="color:var(--danger)">${totGlosa>0?fmt(totGlosa):'—'}</td><td class="money" style="color:var(--success)">${fmt(totPagar)}</td><td colspan="2"></td></tr>`;
+    const media=pagamentos.length>0?totPagar/pagamentos.length:0;
+    tbPgto.innerHTML+=`
+      <tr class="total-row">
+        <td colspan="4">Total (${pagamentos.length} pagamento${pagamentos.length!==1?'s':''})</td>
+        <td class="money">${fmt(totVal)}</td>
+        <td class="money" style="color:var(--danger)">${totGlosa>0?fmt(totGlosa):'—'}</td>
+        <td class="money" style="color:var(--success)">${fmt(totPagar)}</td>
+        <td colspan="2"></td>
+      </tr>
+      <tr class="total-row">
+        <td colspan="4" style="color:var(--text-tertiary)">Média por pagamento</td>
+        <td colspan="2"></td>
+        <td class="money" style="color:var(--accent)">${fmt(media)}</td>
+        <td colspan="2"></td>
+      </tr>`;
   }
 }
 
