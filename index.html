@@ -834,6 +834,9 @@ canvas{max-height:220px}
       <!-- Contexto: contrato + valor base -->
       <div id="apost-contrato-info" style="font-size:11px;color:var(--text-tertiary);margin-bottom:14px;padding:10px 14px;background:var(--bg-surface-soft);border-radius:var(--radius-md);border:1px solid var(--border-light);display:flex;flex-direction:column;gap:4px"></div>
       <div class="form-grid">
+        <div class="fg full"><label class="fl">Item do Contrato *</label>
+          <select class="fc" id="apost-item" onchange="atualizarBaseApostilamento()"><option value="">Selecione o item...</option></select>
+        </div>
         <div class="fg half"><label class="fl">Data do Apostilamento *</label><input class="fc" type="date" id="apost-data"></div>
         <div class="fg half"><label class="fl">Processo SEI / NUP</label><input class="fc" type="text" id="apost-processo" placeholder="48500.001234/2025"></div>
         <div class="fg half">
@@ -1722,33 +1725,43 @@ function openModalApostilamentoContrato(contratoId){
 function openModalApostilamento(contratoId, apostilamentoId){
   const cId = typeof contratoId==='string' ? contratoId : currentContratoId;
   const c=DB.contratos.find(x=>x.id===cId); if(!c){toast('Contrato não encontrado','error');return;}
-  // Garante currentContratoId sincronizado
   currentContratoId = cId;
   editApostilamentoId = apostilamentoId||null;
 
-  const {base, baseLabel} = blocoBaseApostilamento(c, apostilamentoId);
-  const valorAtualContrato = calcValorComApostilamentos(c);
-  const nApos = (c.apostilamentos||[]).length;
+  // Popular select de itens
+  const selItem=document.getElementById('apost-item');
+  selItem.innerHTML='<option value="">Selecione o item...</option>';
+  (c.itens||[]).forEach(it=>{
+    const op=document.createElement('option');
+    op.value=it.id;
+    op.textContent=`${it.nome} (${it.tipo}) — ${fmt(calcValorEfetivo(it))}`;
+    selItem.appendChild(op);
+  });
 
-  // Painel de contexto
+  document.getElementById('mtitle-apost').textContent = apostilamentoId ? 'Editar Apostilamento' : 'Novo Apostilamento';
   document.getElementById('apost-contrato-info').innerHTML=`
     <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center">
       <div><span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-tertiary)">Contrato</span><br><strong>${c.numero} — ${c.fornecedor}</strong></div>
-      <div><span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-tertiary)">Valor Base (${baseLabel})</span><br><strong style="font-family:var(--font-mono);color:var(--warning)">${fmt(base)}</strong></div>
-      <div><span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-tertiary)">Valor Atual c/ Reajustes</span><br><strong style="font-family:var(--font-mono);color:var(--success)">${fmt(valorAtualContrato)}</strong></div>
-      <div><span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-tertiary)">Apostilamentos</span><br><strong>${nApos}</strong></div>
     </div>`;
 
-  document.getElementById('mtitle-apost').textContent = apostilamentoId ? 'Editar Apostilamento' : 'Novo Apostilamento';
-
   if(apostilamentoId){
-    const a=(c.apostilamentos||[]).find(x=>x.id===apostilamentoId); if(!a)return;
-    document.getElementById('apost-data').value=a.data||'';
-    document.getElementById('apost-processo').value=a.processo||'';
-    document.getElementById('apost-percentual').value=a.percentual||'';
-    document.getElementById('apost-novo-valor').value=a.novoValor!=null?a.novoValor:'';
-    document.getElementById('apost-obs').value=a.obs||'';
+    // Encontrar qual item contém esse apostilamento
+    let itemDono=null, apostDono=null;
+    for(const it of (c.itens||[])){
+      const a=(it.apostilamentos||[]).find(x=>x.id===apostilamentoId);
+      if(a){ itemDono=it; apostDono=a; break; }
+    }
+    if(!itemDono){toast('Apostilamento não encontrado','error');return;}
+    selItem.value=itemDono.id;
+    atualizarBaseApostilamento();
+    document.getElementById('apost-data').value=apostDono.data||'';
+    document.getElementById('apost-processo').value=apostDono.processo||'';
+    document.getElementById('apost-percentual').value=apostDono.percentual||'';
+    document.getElementById('apost-novo-valor').value=apostDono.novoValor!=null?apostDono.novoValor:'';
+    document.getElementById('apost-obs').value=apostDono.obs||'';
   } else {
+    // Pré-selecionar se só houver 1 item
+    if((c.itens||[]).length===1){ selItem.value=c.itens[0].id; atualizarBaseApostilamento(); }
     ['apost-data','apost-processo','apost-percentual','apost-obs'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
     document.getElementById('apost-novo-valor').value='';
   }
@@ -1756,9 +1769,32 @@ function openModalApostilamento(contratoId, apostilamentoId){
   openModal('apostilamento');
 }
 
+function atualizarBaseApostilamento(){
+  const itemId=document.getElementById('apost-item').value;
+  const c=DB.contratos.find(x=>x.id===currentContratoId); if(!c||!itemId) return;
+  const item=(c.itens||[]).find(x=>x.id===itemId); if(!item) return;
+  const valEfetivo=calcValorEfetivo(item);
+  const nApos=(item.apostilamentos||[]).length;
+  document.getElementById('apost-contrato-info').innerHTML=`
+    <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center">
+      <div><span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-tertiary)">Contrato</span><br><strong>${c.numero} — ${c.fornecedor}</strong></div>
+      <div><span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-tertiary)">Item Selecionado</span><br><strong>${item.nome} (${item.tipo})</strong></div>
+      <div><span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-tertiary)">Valor Base do Item</span><br><strong style="font-family:var(--font-mono);color:var(--warning)">${fmt(item.valor)}</strong></div>
+      <div><span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-tertiary)">Valor Atual c/ Reajustes</span><br><strong style="font-family:var(--font-mono);color:var(--success)">${fmt(valEfetivo)}</strong></div>
+      <div><span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-tertiary)">Apostilamentos</span><br><strong>${nApos}</strong></div>
+    </div>`;
+  // Limpa preview e campos de valor ao trocar item
+  document.getElementById('apost-preview-box').style.display='none';
+  document.getElementById('apost-percentual').value='';
+  document.getElementById('apost-novo-valor').value='';
+}
+
 function previewApostilamento(origem){
   const c=DB.contratos.find(x=>x.id===currentContratoId); if(!c)return;
-  const {base} = blocoBaseApostilamento(c, editApostilamentoId);
+  const itemId=document.getElementById('apost-item').value;
+  const item=itemId?(c.itens||[]).find(x=>x.id===itemId):null;
+  const base = item ? calcValorEfetivo(item) : 0;
+  if(!base){ document.getElementById('apost-preview-box').style.display='none'; return; }
 
   const box = document.getElementById('apost-preview-box');
   const content = document.getElementById('apost-preview-content');
@@ -1794,6 +1830,8 @@ function mostrarPreview(base, pct, novoValor, content, box){
 }
 
 function salvarApostilamento(){
+  const itemId=document.getElementById('apost-item').value;
+  if(!itemId){toast('Selecione o item do contrato','error');return;}
   const data=document.getElementById('apost-data').value;
   const pctStr=document.getElementById('apost-percentual').value;
   const novoValorStr=document.getElementById('apost-novo-valor').value;
@@ -1801,13 +1839,12 @@ function salvarApostilamento(){
   if(pctStr===''&&novoValorStr===''){toast('Informe o percentual ou o novo valor','error');return;}
 
   const c=DB.contratos.find(x=>x.id===currentContratoId); if(!c){toast('Contrato não encontrado','error');return;}
-  if(!c.apostilamentos) c.apostilamentos=[];
+  const item=(c.itens||[]).find(x=>x.id===itemId); if(!item){toast('Item não encontrado','error');return;}
+  if(!item.apostilamentos) item.apostilamentos=[];
 
-  const {base} = blocoBaseApostilamento(c, editApostilamentoId);
+  const base=calcValorEfetivo(item);
   let percentual=pv(pctStr);
   let novoValor=pv(novoValorStr);
-
-  // Deriva o que estiver faltando
   if(pctStr!==''&&novoValorStr==='') novoValor=base*(1+percentual/100);
   if(novoValorStr!==''&&pctStr==='') percentual=base>0?((novoValor/base)-1)*100:0;
 
@@ -1818,11 +1855,11 @@ function salvarApostilamento(){
   };
 
   if(editApostilamentoId){
-    const idx=c.apostilamentos.findIndex(x=>x.id===editApostilamentoId);
-    if(idx!==-1) c.apostilamentos[idx]={...c.apostilamentos[idx],...dados};
+    const idx=item.apostilamentos.findIndex(x=>x.id===editApostilamentoId);
+    if(idx!==-1) item.apostilamentos[idx]={...item.apostilamentos[idx],...dados};
     toast('Apostilamento atualizado!','success');
   } else {
-    c.apostilamentos.push({id:uid(),...dados});
+    item.apostilamentos.push({id:uid(),...dados});
     toast('Apostilamento registrado!','success');
   }
   saveDB(); closeModal('apostilamento'); renderDetail();
@@ -1831,7 +1868,11 @@ function salvarApostilamento(){
 function excluirApostilamento(apostId){
   if(!confirm('Excluir este apostilamento?'))return;
   const c=DB.contratos.find(x=>x.id===currentContratoId); if(!c)return;
-  c.apostilamentos=(c.apostilamentos||[]).filter(x=>x.id!==apostId);
+  // Busca em qual item está o apostilamento
+  for(const item of (c.itens||[])){
+    const idx=(item.apostilamentos||[]).findIndex(x=>x.id===apostId);
+    if(idx!==-1){ item.apostilamentos.splice(idx,1); break; }
+  }
   saveDB(); renderDetail(); toast('Apostilamento excluído.','warn');
 }
 
