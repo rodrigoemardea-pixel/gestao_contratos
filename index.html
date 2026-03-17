@@ -688,8 +688,14 @@ canvas{max-height:220px}
     <div class="modal-body">
       <div style="font-size:11px;color:var(--text-tertiary);margin-bottom:12px;padding:7px 10px;background:var(--bg-surface-soft);border-radius:var(--radius-md);border:1px solid var(--border-light)" id="reforco-emp-info"></div>
       <div class="form-grid">
-        <div class="fg full"><label class="fl">Valor do Reforço (R$) *</label>
+        <div class="fg half"><label class="fl">Valor do Reforço (R$) *</label>
           <input class="fc" type="number" id="reforco-valor" placeholder="Valor a adicionar ao empenho" step="0.01" min="0.01">
+        </div>
+        <div class="fg half"><label class="fl">Data do Reforço</label>
+          <input class="fc" type="date" id="reforco-data">
+        </div>
+        <div class="fg full"><label class="fl">Nº Processo SEI</label>
+          <input class="fc" type="text" id="reforco-sei" placeholder="Ex: 00390.001234/2024-01">
         </div>
         <div class="fg full"><label class="fl">Observação</label>
           <input class="fc" type="text" id="reforco-obs" placeholder="Motivo ou referência do reforço...">
@@ -716,11 +722,17 @@ canvas{max-height:220px}
     <div class="modal-body">
       <div style="font-size:11px;color:var(--text-tertiary);margin-bottom:12px;padding:7px 10px;background:var(--bg-surface-soft);border-radius:var(--radius-md);border:1px solid var(--border-light)" id="cancelamento-emp-info"></div>
       <div class="form-grid">
-        <div class="fg full"><label class="fl">Valor a Cancelar (R$) *</label>
+        <div class="fg half"><label class="fl">Valor a Cancelar (R$) *</label>
           <input class="fc" type="number" id="cancelamento-valor" placeholder="Valor a subtrair do empenho" step="0.01" min="0.01" oninput="previewCancelamento()">
+        </div>
+        <div class="fg half"><label class="fl">Data do Cancelamento</label>
+          <input class="fc" type="date" id="cancelamento-data">
         </div>
         <div class="fg full"><label class="fl">Novo Valor do Empenho (após cancelamento parcial)</label>
           <input class="fc" id="cancelamento-preview" disabled style="color:var(--danger);font-family:var(--font-mono);font-weight:500">
+        </div>
+        <div class="fg full"><label class="fl">Nº Processo SEI</label>
+          <input class="fc" type="text" id="cancelamento-sei" placeholder="Ex: 00390.001234/2024-01">
         </div>
         <div class="fg full"><label class="fl">Observação</label>
           <input class="fc" type="text" id="cancelamento-obs" placeholder="Motivo do cancelamento parcial...">
@@ -1437,6 +1449,8 @@ function openModalReforco(empenhoId){
   document.getElementById('reforco-emp-info').innerHTML=
     `Empenho: <strong>${emp.numero}</strong> (${emp.tipo}) &nbsp;|&nbsp; Valor atual: <strong>${fmt(emp.valor)}</strong> &nbsp;|&nbsp; Saldo: <strong style="color:var(--success)">${fmt(saldo)}</strong>`;
   document.getElementById('reforco-valor').value='';
+  document.getElementById('reforco-data').value='';
+  document.getElementById('reforco-sei').value='';
   document.getElementById('reforco-obs').value='';
   openModal('reforco');
 }
@@ -1446,8 +1460,10 @@ function salvarReforco(){
   const c=DB.contratos.find(x=>x.id===currentContratoId);
   const emp=(c?.empenhos||[]).find(x=>x.id===reforcoEmpId); if(!emp){toast('Empenho não encontrado','error');return;}
   const obsReforco=uc(document.getElementById('reforco-obs').value.trim());
+  const dataReforco=document.getElementById('reforco-data').value||new Date().toISOString().split('T')[0];
+  const seiReforco=uc(document.getElementById('reforco-sei').value.trim());
   if(!emp.movimentos) emp.movimentos=[];
-  emp.movimentos.push({id:uid(),tipo:'reforco',valor:valorReforco,data:new Date().toISOString().split('T')[0],obs:obsReforco});
+  emp.movimentos.push({id:uid(),tipo:'reforco',valor:valorReforco,data:dataReforco,sei:seiReforco,obs:obsReforco});
   emp.valor=calcValorAtualEmpenho(emp);
   saveDB(); closeModal('reforco'); renderDetail();
   toast(`Reforço de ${fmt(valorReforco)} aplicado. Novo valor: ${fmt(emp.valor)}`,'success');
@@ -1464,7 +1480,9 @@ function openModalCancelamento(empenhoId){
   document.getElementById('cancelamento-emp-info').innerHTML=
     `Empenho: <strong>${emp.numero}</strong> (${emp.tipo}) &nbsp;|&nbsp; Valor atual: <strong>${fmt(emp.valor)}</strong> &nbsp;|&nbsp; Saldo: <strong style="color:var(--success)">${fmt(saldo)}</strong>`;
   document.getElementById('cancelamento-valor').value='';
+  document.getElementById('cancelamento-data').value='';
   document.getElementById('cancelamento-preview').value='';
+  document.getElementById('cancelamento-sei').value='';
   document.getElementById('cancelamento-obs').value='';
   document.getElementById('cancelamento-valor').dataset.valorAtual=emp.valor;
   openModal('cancelamento');
@@ -1482,8 +1500,10 @@ function salvarCancelamento(){
   const c=DB.contratos.find(x=>x.id===currentContratoId);
   const emp=(c?.empenhos||[]).find(x=>x.id===cancelEmpId); if(!emp){toast('Empenho não encontrado','error');return;}
   const obsCancel=uc(document.getElementById('cancelamento-obs').value.trim());
+  const dataCancel=document.getElementById('cancelamento-data').value||new Date().toISOString().split('T')[0];
+  const seiCancel=uc(document.getElementById('cancelamento-sei').value.trim());
   if(!emp.movimentos) emp.movimentos=[];
-  emp.movimentos.push({id:uid(),tipo:'cancelamento',valor:valorCancel,data:new Date().toISOString().split('T')[0],obs:obsCancel});
+  emp.movimentos.push({id:uid(),tipo:'cancelamento',valor:valorCancel,data:dataCancel,sei:seiCancel,obs:obsCancel});
   emp.valor=calcValorAtualEmpenho(emp);
   saveDB(); closeModal('cancelamento'); renderDetail();
   toast(`Cancelamento de ${fmt(valorCancel)} aplicado. Novo valor: ${fmt(emp.valor)}`,'warn');
@@ -2440,7 +2460,8 @@ function renderGlobal(){
         return`<tr style="background:${isRef?'var(--success-soft)':'var(--danger-soft)'}">
           <td class="mono" style="padding-left:22px;color:${cor};font-size:10px">${icone} ${label}</td>
           <td class="mono" style="font-size:10px;color:var(--text-tertiary)">${fmtD(m.data)}</td>
-          <td colspan="2"></td>
+          <td class="mono" style="font-size:10px;color:var(--text-tertiary)">${m.sei||'—'}</td>
+          <td></td>
           <td class="money" style="color:${cor};font-weight:600">${sinal}${fmt(m.valor)}</td>
           <td colspan="2" style="font-size:10px;color:var(--text-tertiary)">${m.obs||'—'}</td>
           <td onclick="event.stopPropagation()"><div class="action-wrap">
