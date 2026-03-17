@@ -354,22 +354,6 @@ th.sort-desc::after{content:' ↓';opacity:1;color:var(--accent)}
 .nota-input-wrap textarea{flex:1;min-height:60px;resize:vertical}
 .nota-vazia{font-size:12px;color:var(--text-tertiary);text-align:center;padding:24px;display:flex;align-items:center;justify-content:center;gap:8px}
 
-/* IA */
-.ia-card{background:linear-gradient(135deg,var(--accent-muted) 0%,var(--purple-soft) 100%);border:1px solid var(--accent-ring);border-radius:var(--radius-xl);padding:18px 20px;margin-bottom:16px}
-.ia-header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
-.ia-icon{width:32px;height:32px;background:var(--accent);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;flex-shrink:0}
-.ia-title{font-size:13px;font-weight:700;color:var(--text-primary);letter-spacing:-.2px}
-.ia-sub{font-size:10px;color:var(--text-tertiary)}
-.ia-body{font-size:12px;color:var(--text-primary);line-height:1.7;white-space:pre-wrap}
-.ia-loading{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text-tertiary)}
-.ia-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:iaPulse .8s ease-in-out infinite}
-.ia-dot:nth-child(2){animation-delay:.15s}
-.ia-dot:nth-child(3){animation-delay:.3s}
-@keyframes iaPulse{0%,100%{transform:scale(1);opacity:.4}50%{transform:scale(1.4);opacity:1}}
-.ia-anomalia{background:var(--danger-soft);border:1px solid rgba(212,43,43,.2);border-radius:var(--radius-md);padding:8px 12px;margin-top:8px;font-size:11px;color:var(--danger)}
-.ia-projecao{background:var(--warning-soft);border:1px solid rgba(194,114,10,.2);border-radius:var(--radius-md);padding:8px 12px;margin-top:8px;font-size:11px;color:var(--warning)}
-.ia-ok{background:var(--success-soft);border:1px solid rgba(5,150,105,.2);border-radius:var(--radius-md);padding:8px 12px;margin-top:8px;font-size:11px;color:var(--success)}
-
 /* TIMELINE HORIZONTAL */
 .htimeline-wrap{overflow-x:auto;padding:8px 0 16px;margin-bottom:16px}
 .htimeline{display:flex;align-items:flex-start;gap:0;min-width:max-content;padding:0 20px;position:relative}
@@ -704,7 +688,6 @@ th.sort-desc::after{content:' ↓';opacity:1;color:var(--accent)}
       <button class="gl-tab active" id="gl-tab-emp" onclick="switchGlobalTab('emp')">Empenhos <span class="section-count" id="gl-count-emp">0</span></button>
       <button class="gl-tab" id="gl-tab-pgto" onclick="switchGlobalTab('pgto')">Pagamentos <span class="section-count" id="gl-count-pgto">0</span></button>
       <button class="gl-tab" id="gl-tab-timeline" onclick="switchGlobalTab('timeline')">⏱ Timeline</button>
-      <button class="gl-tab" id="gl-tab-ia" onclick="switchGlobalTab('ia')">🤖 Análise IA</button>
       <button class="gl-tab" id="gl-tab-notas" onclick="switchGlobalTab('notas')">📝 Anotações <span class="section-count" id="gl-count-notas">0</span></button>
     </div>
 
@@ -758,18 +741,6 @@ th.sort-desc::after{content:' ↓';opacity:1;color:var(--accent)}
     <!-- PAINEL TIMELINE -->
     <div id="gl-pane-timeline" style="display:none">
       <div id="htimeline-container"></div>
-    </div>
-
-    <!-- PAINEL IA -->
-    <div id="gl-pane-ia" style="display:none">
-      <div id="ia-container">
-        <div style="text-align:center;padding:32px 20px">
-          <div style="font-size:32px;margin-bottom:12px">🤖</div>
-          <div style="font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:6px">Análise Inteligente do Contrato</div>
-          <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:20px;max-width:400px;margin-left:auto;margin-right:auto">A IA analisa execução financeira, detecta anomalias, projeta encerramento do saldo e gera um diagnóstico completo.</div>
-          <button class="btn btn-primary" onclick="analisarContrato()">🤖 Gerar Análise</button>
-        </div>
-      </div>
     </div>
 
     <!-- PAINEL ANOTAÇÕES -->
@@ -2522,6 +2493,22 @@ function renderItemCardHtml(item, c){
 // ═══ RENDER DETAIL ═══
 function renderDetail(){
   const c=DB.contratos.find(x=>x.id===currentContratoId); if(!c){showList();return;}
+
+  // Resetar para aba de empenhos sempre que mudar de contrato
+  globalTab='emp';
+  ['emp','pgto','timeline','notas'].forEach(t=>{
+    document.getElementById('gl-tab-'+t)?.classList.toggle('active',t==='emp');
+    const pane=document.getElementById('gl-pane-'+t);
+    if(pane) pane.style.display=t==='emp'?'':'none';
+    const filt=document.getElementById('gl-filters-'+t);
+    if(filt) filt.style.display=t==='emp'?'':'none';
+  });
+  // Limpar containers das abas secundárias
+  const htEl=document.getElementById('htimeline-container');
+  if(htEl) htEl.innerHTML='';
+  const notasEl=document.getElementById('lista-notas');
+  if(notasEl) notasEl.innerHTML='';
+
   document.getElementById('breadcrumb-nome').textContent=c.numero+' — '+c.fornecedor;
   const ve=vigenciaEfetiva(c);
   const sv=svStatus(ve.fim),pct=vigPct(ve.inicio,ve.fim);
@@ -2746,7 +2733,7 @@ let globalTab='emp'; // 'emp' | 'pgto'
 
 function switchGlobalTab(tab){
   globalTab=tab;
-  ['emp','pgto','timeline','ia','notas'].forEach(t=>{
+  ['emp','pgto','timeline','notas'].forEach(t=>{
     document.getElementById('gl-tab-'+t)?.classList.toggle('active',tab===t);
     const pane=document.getElementById('gl-pane-'+t);
     if(pane) pane.style.display=tab===t?'':'none';
@@ -3318,39 +3305,74 @@ function renderTimeline(){
   const el=document.getElementById('htimeline-container'); if(!el) return;
 
   const entries=[];
-  entries.push({tipo:'original',label:'Contrato Original',data:c.inicio,data2:c.fim,val:calcValor(c),info:`Vigência: ${fmtD(c.inicio)} → ${fmtD(c.fim)}`});
-  (c.termosAditivos||[]).forEach((ta,i)=>entries.push({tipo:'ta',label:`TA ${i+1}`,data:ta.dataAssinatura||ta.inicio,data2:ta.fim,val:ta.valor?pv(ta.valor):null,info:ta.obs||ta.objeto||''}));
-  (c.apostilamentos||[]).forEach((a,i)=>{
-    (c.itens||[]).forEach(it=>{
-      const found=(it.apostilamentos||[]).find(x=>x.id===a.id);
-      if(found) entries.push({tipo:'apost',label:`Apostilamento`,data:found.data,val:found.novoValor,info:`${found.percentual>=0?'+':''}${pv(found.percentual).toFixed(2)}% — ${it.nome}`});
+
+  // Contrato original
+  entries.push({tipo:'original',label:'Contrato Original',data:c.inicio,val:calcValor(c),info:`Vigência: ${fmtD(c.inicio)} → ${fmtD(c.fim)}`});
+
+  // Termos Aditivos
+  (c.termosAditivos||[]).forEach((ta,i)=>
+    entries.push({tipo:'ta',label:`TA ${i+1}`,data:ta.dataAssinatura||ta.inicio,val:ta.valor?pv(ta.valor):null,info:ta.obs||ta.objeto||''})
+  );
+
+  // Apostilamentos de todos os itens
+  (c.itens||[]).forEach(item=>{
+    (item.apostilamentos||[]).forEach(a=>{
+      const pct=pv(a.percentual);
+      entries.push({
+        tipo:'apost',
+        label:`${item.nome.slice(0,14)}${item.nome.length>14?'…':''}`,
+        data:a.data,
+        val:a.novoValor,
+        info:`${pct>=0?'+':''}${pct.toFixed(2)}% — ${item.nome}${a.processo?' · '+a.processo:''}`
+      });
     });
   });
-  (c.empenhos||[]).forEach(e=>entries.push({tipo:'emp',label:e.numero,data:e.data||e.ano+'-01-01',val:e.valor,info:`Empenho ${e.ano}`}));
+
+  // Empenhos
+  (c.empenhos||[]).forEach(e=>
+    entries.push({tipo:'emp',label:e.numero,data:e.data||(e.ano?e.ano+'-01-01':null),val:e.valor,info:`Empenho ${e.ano||''}${e.sei?' · '+e.sei:''}`})
+  );
+
+  // Pagamentos — agrupa por mês/ano para não poluir
+  const pgMes={};
   (c.pagamentos||[]).forEach(p=>{
     const m=MESES_CURTOS.indexOf((p.mes||'').toUpperCase());
-    const d=p.ano&&m>=0?`${p.ano}-${String(m+1).padStart(2,'0')}-01`:null;
-    if(d) entries.push({tipo:'pgto',label:`${p.mes}/${p.ano}`,data:d,val:p.apagar,info:`NF: ${p.nf||'—'}`});
+    const key=`${p.ano}-${String(m+1).padStart(2,'0')}`;
+    if(!pgMes[key]) pgMes[key]={mes:p.mes,ano:p.ano,total:0,count:0,data:p.ano&&m>=0?`${p.ano}-${String(m+1).padStart(2,'0')}-01`:null};
+    pgMes[key].total+=pv(p.apagar);
+    pgMes[key].count++;
   });
+  Object.values(pgMes).forEach(pg=>{
+    if(pg.data) entries.push({tipo:'pgto',label:`${pg.mes}/${pg.ano}`,data:pg.data,val:pg.total,info:`${pg.count} pagamento${pg.count>1?'s':''} · ${fmt(pg.total)}`});
+  });
+
   entries.sort((a,b)=>(a.data||'').localeCompare(b.data||''));
 
   const cores={original:'var(--text-tertiary)',ta:'var(--accent)',apost:'var(--warning)',emp:'var(--purple)',pgto:'var(--success)'};
   const icones={original:'📋',ta:'📎',apost:'📝',emp:'💼',pgto:'💰'};
+  const nomes={original:'Original',ta:'Termo Ad.',apost:'Apostil.',emp:'Empenho',pgto:'Pagamento'};
 
-  el.innerHTML=`<div style="font-size:10px;color:var(--text-tertiary);margin-bottom:8px;padding:0 4px">
-    ${['original','ta','apost','emp','pgto'].map(t=>`<span style="display:inline-flex;align-items:center;gap:4px;margin-right:12px"><span style="width:8px;height:8px;border-radius:50%;background:${cores[t]};display:inline-block"></span>${icones[t]} ${({original:'Contrato',ta:'Termo Aditivo',apost:'Apostilamento',emp:'Empenho',pgto:'Pagamento'})[t]}</span>`).join('')}
-  </div>
-  <div class="htimeline-wrap"><div class="htimeline">${entries.map((e,i)=>`
-    ${i>0?'<div class="htl-connector"></div>':''}
-    <div class="htl-item">
-      <div class="htl-dot ${e.tipo}" style="background:${cores[e.tipo]};box-shadow:0 0 0 2px ${cores[e.tipo]}40"></div>
-      <div class="htl-card" title="${e.info}" onclick="void(0)">
-        <div class="htl-tipo" style="color:${cores[e.tipo]}">${icones[e.tipo]} ${({original:'Original',ta:'Termo Ad.',apost:'Apostil.',emp:'Empenho',pgto:'Pagamento'})[e.tipo]}</div>
-        <div class="htl-nome">${e.label}</div>
-        <div class="htl-data">${e.data?fmtD(e.data):'—'}</div>
-        ${e.val!=null?`<div class="htl-val">${fmt(e.val)}</div>`:''}
-      </div>
-    </div>`).join('')}</div></div>`;
+  if(!entries.length){
+    el.innerHTML='<div style="text-align:center;padding:32px;font-size:12px;color:var(--text-tertiary)">Nenhum evento registrado neste contrato.</div>';
+    return;
+  }
+
+  el.innerHTML=`
+    <div style="font-size:10px;color:var(--text-tertiary);margin-bottom:10px;padding:0 4px;display:flex;flex-wrap:wrap;gap:8px">
+      ${Object.keys(cores).map(t=>`<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:${cores[t]};display:inline-block;flex-shrink:0"></span>${icones[t]} ${{original:'Contrato',ta:'Termo Aditivo',apost:'Apostilamento',emp:'Empenho',pgto:'Pagamento'}[t]}</span>`).join('')}
+    </div>
+    <div class="htimeline-wrap"><div class="htimeline">${entries.map((e,i)=>`
+      ${i>0?'<div class="htl-connector"></div>':''}
+      <div class="htl-item">
+        <div class="htl-dot ${e.tipo}" style="background:${cores[e.tipo]};box-shadow:0 0 0 3px ${cores[e.tipo]}30"></div>
+        <div class="htl-card" title="${e.info}">
+          <div class="htl-tipo" style="color:${cores[e.tipo]}">${icones[e.tipo]} ${nomes[e.tipo]}</div>
+          <div class="htl-nome">${e.label}</div>
+          <div class="htl-data">${e.data?fmtD(e.data):'—'}</div>
+          ${e.val!=null?`<div class="htl-val">${fmt(e.val)}</div>`:''}
+        </div>
+      </div>`).join('')}
+    </div></div>`;
 }
 
 // ═══ ANOTAÇÕES ═══
@@ -3394,78 +3416,6 @@ function excluirNota(notaId){
 }
 
 // ═══ ANÁLISE IA ═══
-async function analisarContrato(){
-  const c=DB.contratos.find(x=>x.id===currentContratoId); if(!c) return;
-  const el=document.getElementById('ia-container'); if(!el) return;
-
-  el.innerHTML=`<div class="ia-card"><div class="ia-header"><div class="ia-icon">🤖</div><div><div class="ia-title">Analisando contrato...</div><div class="ia-sub">Aguarde alguns segundos</div></div></div>
-    <div class="ia-loading"><div class="ia-dot"></div><div class="ia-dot"></div><div class="ia-dot"></div><span>Processando dados financeiros...</span></div></div>`;
-
-  // Montar contexto para a IA
-  const ve=vigenciaEfetiva(c);
-  const val=calcValor(c), emp=calcEmp(c), pago=calcPago(c), saldo=emp-pago;
-  const pctExec=val>0?((pago/val)*100).toFixed(1):0;
-  const diasFim=ve.fim?Math.ceil((new Date(ve.fim+'T00:00:00')-new Date())/(86400000)):null;
-  const mediaMensal=mediaMensalPgto(c,6);
-  const mesesCobertos=mediaMensal>0?(saldo/mediaMensal).toFixed(1):'N/A';
-  const pgtos=c.pagamentos||[];
-  const empenhos=c.empenhos||[];
-  const ultimosPgtos=pgtos.slice(-6).map(p=>`${p.mes||'?'}/${p.ano||'?'}: ${fmt(p.apagar)}`).join(', ');
-  const glosaTotal=pgtos.reduce((s,p)=>s+pv(p.glosa),0);
-
-  const prompt=`Você é um especialista em gestão de contratos públicos. Analise o seguinte contrato e gere um diagnóstico executivo em português:
-
-CONTRATO: ${c.numero} — ${c.fornecedor}
-OBJETO: ${c.objeto||'—'}
-GESTOR: ${c.gestor||'—'}
-VIGÊNCIA: ${fmtD(c.inicio)} → ${fmtD(ve.fim)}${diasFim!=null?' ('+Math.abs(diasFim)+'d '+(diasFim<0?'vencido':'restantes')+')':''}
-VALOR TOTAL: ${fmt(val)}
-TOTAL EMPENHADO: ${fmt(emp)}
-TOTAL PAGO: ${fmt(pago)}
-SALDO EMPENHO: ${fmt(saldo)}
-% EXECUÇÃO: ${pctExec}%
-MÉDIA MENSAL (últimos 6 meses): ${fmt(mediaMensal)}
-SALDO COBRE: ${mesesCobertos} meses no ritmo atual
-ÚLTIMOS PAGAMENTOS: ${ultimosPgtos||'Nenhum'}
-TOTAL GLOSAS: ${fmt(glosaTotal)}
-Nº EMPENHOS: ${empenhos.length}
-Nº PAGAMENTOS: ${pgtos.length}
-Nº TERMOS ADITIVOS: ${(c.termosAditivos||[]).length}
-OBS INTERNAS: ${c.obsInterna||'Nenhuma'}
-
-Gere um diagnóstico com:
-1. SITUAÇÃO GERAL (1-2 frases diretas)
-2. PONTOS DE ATENÇÃO (liste apenas os existentes, no máximo 4)
-3. PROJEÇÃO (quando o saldo se esgota, se o contrato cobre o período)
-4. RECOMENDAÇÃO (1 ação prioritária)
-
-Seja direto, use números reais do contrato, evite frases genéricas. Use linguagem de gestor público.`;
-
-  try{
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:1000,
-        messages:[{role:'user',content:prompt}]
-      })
-    });
-    const data=await resp.json();
-    const texto=data.content?.[0]?.text||'Não foi possível gerar a análise.';
-    el.innerHTML=`<div class="ia-card">
-      <div class="ia-header">
-        <div class="ia-icon">🤖</div>
-        <div><div class="ia-title">Diagnóstico — ${c.numero}</div><div class="ia-sub">${new Date().toLocaleString('pt-BR')}</div></div>
-        <button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="analisarContrato()">↻ Reanalisar</button>
-      </div>
-      <div class="ia-body">${texto}</div>
-    </div>`;
-  }catch(e){
-    el.innerHTML=`<div class="ia-card"><div class="ia-body" style="color:var(--danger)">Erro ao conectar com a IA. Verifique sua conexão e tente novamente.</div></div>`;
-  }
-}
-
 // ═══ PENDÊNCIAS DO DIA ═══
 function mostrarPendencias(){
   const naoMostrar=localStorage.getItem('gc3_nao_pend')==='1';
