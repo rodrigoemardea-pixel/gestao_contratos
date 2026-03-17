@@ -2730,8 +2730,21 @@ function atualizarDashboard(){
   const contsFilt=DB.contratos.filter(c=>{
     const ve=vigenciaEfetiva(c);
     const mg=!fG||c.gestor===fG;
-    const ma=!fA||(ve.inicio&&ve.inicio.startsWith(fA))||(ve.fim&&ve.fim.startsWith(fA));
     const mc=!fC||c.id===fC;
+    let ma=true;
+    if(fA){
+      // Inclui o contrato se o ano filtrado está DENTRO da vigência (início ≤ fA ≤ fim)
+      const anoInicio=ve.inicio?parseInt(ve.inicio.slice(0,4)):null;
+      const anoFim=ve.fim?parseInt(ve.fim.slice(0,4)):null;
+      const anoFiltro=parseInt(fA);
+      const dentroDaVigencia=(anoInicio!=null&&anoFim!=null)
+        ? anoFiltro>=anoInicio&&anoFiltro<=anoFim
+        : (anoInicio!=null?anoFiltro>=anoInicio:false)||(anoFim!=null?anoFiltro<=anoFim:false);
+      // Também inclui se tem empenho ou pagamento naquele ano
+      const temEmpAno=(c.empenhos||[]).some(e=>String(e.ano)===fA);
+      const temPgtoAno=(c.pagamentos||[]).some(p=>String(p.ano)===fA);
+      ma=dentroDaVigencia||temEmpAno||temPgtoAno;
+    }
     return mg&&ma&&mc;
   });
 
