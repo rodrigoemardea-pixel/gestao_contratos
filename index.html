@@ -296,7 +296,15 @@ canvas{max-height:220px}
 .exp-fill{height:100%;border-radius:100px;background:var(--success)}
 
 /* TRUNCATE */
-.trunc{max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.trunc{max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:help;position:relative}
+.obj-tooltip{position:fixed;background:var(--text-primary);color:var(--bg-surface);font-size:11px;padding:6px 10px;border-radius:var(--radius-md);max-width:320px;white-space:normal;line-height:1.5;z-index:9999;pointer-events:none;box-shadow:var(--shadow-lg);opacity:0;transition:opacity .15s}
+.obj-tooltip.show{opacity:1}
+
+/* EXEC BAR PAINEL */
+.exec-bar-wrap{min-width:120px}
+.exec-bar-label{display:flex;justify-content:space-between;font-size:9px;color:var(--text-tertiary);margin-bottom:3px;font-family:var(--font-mono)}
+.exec-bar{height:7px;background:var(--border-light);border-radius:100px;overflow:hidden}
+.exec-fill{height:100%;border-radius:100px;transition:width .4s ease}
 
 /* MINI bar inside item */
 .mini-bar{height:4px;background:var(--border-light);border-radius:100px;margin-top:4px;overflow:hidden;min-width:60px}
@@ -501,6 +509,19 @@ canvas{max-height:220px}
       <div class="dash-card"><div class="dash-card-title">Empenhado × Pago por Contrato</div><canvas id="chart-emp"></canvas></div>
       <div class="dash-card"><div class="dash-card-title">Pagamentos por Mês/Ano</div><canvas id="chart-pgto"></canvas></div>
     </div>
+    <div class="dash-grid">
+      <div class="dash-card" style="grid-column:1/-1"><div class="dash-card-title">% Execução Financeira por Contrato (Pago / Valor Total)</div><canvas id="chart-exec" style="max-height:280px"></canvas></div>
+    </div>
+    <div class="dash-grid">
+      <div class="dash-card" style="grid-column:1/-1"><div class="dash-card-title">Saldo de Empenho Disponível por Contrato</div><canvas id="chart-saldo" style="max-height:280px"></canvas></div>
+    </div>
+    <div class="dash-grid">
+      <div class="dash-card" style="grid-column:1/-1"><div class="dash-card-title">Pagamentos Acumulados no Ano</div><canvas id="chart-acumulado" style="max-height:220px"></canvas></div>
+    </div>
+    <div class="dash-grid">
+      <div class="dash-card"><div class="dash-card-title">Glosas por Contrato</div><canvas id="chart-glosas"></canvas></div>
+      <div class="dash-card"><div class="dash-card-title">Distribuição por Gestor (Valor Total)</div><canvas id="chart-gestor"></canvas></div>
+    </div>
   </div>
 
 </div>
@@ -549,6 +570,10 @@ canvas{max-height:220px}
       <div class="filter-group"><label>Ano</label><select id="gf-ano-pgto" onchange="renderGlobal()"><option value="">Todos</option></select></div>
       <div class="filter-group"><label>Empenho</label><select id="gf-emp" onchange="renderGlobal()"><option value="">Todos</option></select></div>
       <div class="filter-group"><label>Item</label><select id="gf-item-pgto" onchange="renderGlobal()"><option value="">Todos</option></select></div>
+      <div class="toolbar-separator"></div>
+      <div class="filter-group"><label>De</label><input type="date" class="fc" id="gf-pgto-de" onchange="renderGlobal()" style="background:none;border:none;font-size:11px;padding:0;width:110px;color:var(--text-primary)"></div>
+      <div class="filter-group"><label>Até</label><input type="date" class="fc" id="gf-pgto-ate" onchange="renderGlobal()" style="background:none;border:none;font-size:11px;padding:0;width:110px;color:var(--text-primary)"></div>
+      <button class="btn btn-ghost btn-sm" onclick="limparFiltrosDatas()" title="Limpar datas">✕ Datas</button>
     </div>
 
     <!-- TABELA EMPENHOS -->
@@ -2136,7 +2161,10 @@ function renderPainel(){
         <td class="money">${fmt(emp)}</td>
         <td class="money" style="color:var(--success)">${fmt(pago)}</td>
         <td class="money" style="color:${saldo<0?'var(--danger)':'var(--success)'}">${fmt(saldo)}</td>
-        <td><div class="exp-bar-wrap"><div style="font-size:9px;color:var(--text-tertiary)">${pct}%</div><div class="exp-bar"><div class="exp-fill" style="width:${pct}%;background:${barColor}"></div></div></div></td>
+        <td><div class="exec-bar-wrap">
+          <div class="exec-bar-label"><span>${pct}%</span><span style="color:${pct>=100?'var(--danger)':pct>=75?'var(--success)':'var(--accent)'}">${pct>=100?'Concluído':pct>=75?'Avançado':pct>=40?'Em andamento':'Inicial'}</span></div>
+          <div class="exec-bar"><div class="exec-fill" style="width:${pct}%;background:${pct>=100?'var(--danger)':pct>=75?'var(--success)':pct>=40?'var(--accent)':'var(--warning)'}"></div></div>
+        </div></td>
       </tr>`;
     }).join('');
   }
@@ -2193,7 +2221,7 @@ function renderLista(){
     const taCount=(c.termosAditivos||[]).length;
     return`<tr onclick="showDetail('${c.id}')" style="cursor:pointer">
       <td class="hi mono">${c.numero}${taCount>0?` <span class="badge badge-purple" style="font-size:9px">${taCount} TA</span>`:''}</td>
-      <td class="trunc" title="${c.objeto||''}">${c.objeto||'—'}</td>
+      <td class="trunc" onmouseenter="showObjTooltip(event,'${(c.objeto||'').replace(/'/g,"&#39;")}')" onmouseleave="hideObjTooltip()" onmousemove="moveObjTooltip(event)">${c.objeto||'—'}</td>
       <td class="hi">${c.fornecedor}</td>
       <td>${c.gestor||'—'}</td>
       <td>${c.substituto||'—'}</td>
@@ -2625,10 +2653,24 @@ function renderGlobal(){
   const fAnoPgto=document.getElementById('gf-ano-pgto').value;
   const fEmp=document.getElementById('gf-emp').value;
   const fItemPgto=document.getElementById('gf-item-pgto').value;
+  const fDe=document.getElementById('gf-pgto-de').value;
+  const fAte=document.getElementById('gf-pgto-ate').value;
+  // Helper: converte mes/ano do pagamento para data YYYY-MM-01 para comparação
+  const pgtoParaData=(p)=>{
+    if(!p.mes||!p.ano) return null;
+    const m=String(MESES_CURTOS.indexOf((p.mes||'').toUpperCase())+1).padStart(2,'0');
+    return `${p.ano}-${m}-01`;
+  };
   const pagamentos=(c.pagamentos||[]).filter(p=>{
     if(fAnoPgto&&String(p.ano)!==fAnoPgto)return false;
     if(fEmp&&p.empenhoNumero!==fEmp)return false;
     if(fItemPgto&&p.itemId!==fItemPgto)return false;
+    if(fDe||fAte){
+      const d=pgtoParaData(p);
+      if(!d) return false;
+      if(fDe&&d<fDe)return false;
+      if(fAte&&d>fAte)return false;
+    }
     return true;
   });
   document.getElementById('gl-count-pgto').textContent=pagamentos.length;
@@ -2750,11 +2792,107 @@ function atualizarDashboard(){
     labels:meses.length?meses:['—'],
     datasets:[{label:'Pago (R$)',data:meses.map(k=>pgMes[k]),backgroundColor:getVar('--chart-3')+'cc',borderColor:getVar('--chart-3'),borderWidth:1,borderRadius:3}]
   });
+
+  // ── GRÁFICO 5: % execução por contrato (horizontal bar) ──
+  const execLabels=contsFilt.map(c=>c.numero||c.fornecedor.slice(0,12));
+  const execPct=contsFilt.map(c=>{const v=calcValor(c);return v>0?Math.min(100,+(calcPago(c)/v*100).toFixed(1)):0;});
+  const execColors=execPct.map(p=>p>=100?getVar('--chart-5')+'cc':p>=75?getVar('--chart-3')+'cc':p>=40?getVar('--chart-1')+'cc':getVar('--chart-4')+'cc');
+  drawChartH('chart-exec',{
+    labels:execLabels.length?execLabels:['—'],
+    datasets:[{label:'Execução (%)',data:execPct,backgroundColor:execColors,borderRadius:3,borderSkipped:false}]
+  },'%');
+
+  // ── GRÁFICO 6: saldo de empenho por contrato ──
+  const saldoLabels=contsFilt.map(c=>c.numero||c.fornecedor.slice(0,12));
+  const saldoVals=contsFilt.map(c=>Math.max(0,calcEmp(c)-calcPago(c)));
+  const saldoColors=saldoVals.map((v,i)=>{
+    const emp=calcEmp(contsFilt[i]);
+    const pct=emp>0?v/emp:0;
+    return pct<0.1?getVar('--chart-5')+'cc':pct<0.3?getVar('--chart-4')+'cc':getVar('--chart-1')+'cc';
+  });
+  drawChart('chart-saldo','bar',{
+    labels:saldoLabels.length?saldoLabels:['—'],
+    datasets:[{label:'Saldo Empenho (R$)',data:saldoVals,backgroundColor:saldoColors,borderRadius:3}]
+  });
+
+  // ── GRÁFICO 7: pagamentos acumulados no ano ──
+  const anoAcum=fA||(new Date().getFullYear().toString());
+  const pgMesAcum={};
+  contsFilt.forEach(c=>{
+    (c.pagamentos||[]).filter(p=>String(p.ano)===anoAcum).forEach(p=>{
+      const idx=MESES_CURTOS.indexOf((p.mes||'').toUpperCase());
+      if(idx>=0) pgMesAcum[idx]=(pgMesAcum[idx]||0)+pv(p.apagar);
+    });
+  });
+  const mesesNomes=MESES_CURTOS.map((m,i)=>m+'/'+anoAcum);
+  let acum=0;
+  const acumVals=MESES_CURTOS.map((_,i)=>{acum+=pgMesAcum[i]||0;return acum||null;});
+  drawChart('chart-acumulado','line',{
+    labels:mesesNomes,
+    datasets:[{label:`Acumulado ${anoAcum}`,data:acumVals,borderColor:getVar('--chart-1'),backgroundColor:getVar('--chart-1')+'22',fill:true,tension:0.3,pointRadius:4,pointBackgroundColor:getVar('--chart-1')}]
+  });
+
+  // ── GRÁFICO 8: glosas por contrato (só com glosa) ──
+  const comGlosa=contsFilt.filter(c=>(c.pagamentos||[]).some(p=>pv(p.glosa)>0));
+  const glosaLabels=comGlosa.map(c=>c.numero||c.fornecedor.slice(0,12));
+  const glosaVals=comGlosa.map(c=>(c.pagamentos||[]).reduce((s,p)=>s+pv(p.glosa),0));
+  if(comGlosa.length){
+    drawChart('chart-glosas','bar',{
+      labels:glosaLabels,
+      datasets:[{label:'Total Glosas (R$)',data:glosaVals,backgroundColor:getVar('--chart-5')+'cc',borderColor:getVar('--chart-5'),borderWidth:1,borderRadius:3}]
+    });
+  } else {
+    const cv=document.getElementById('chart-glosas');
+    if(cv){const p=cv.parentElement;if(charts['chart-glosas'])charts['chart-glosas'].destroy();p.innerHTML='<div class="dash-card-title">Glosas por Contrato</div><div style="font-size:12px;color:var(--text-tertiary);text-align:center;padding:40px 0">✅ Nenhuma glosa registrada</div>';}
+  }
+
+  // ── GRÁFICO 9: distribuição por gestor ──
+  const gestorMap={};
+  contsFilt.forEach(c=>{
+    const g=c.gestor||'Sem gestor';
+    gestorMap[g]=(gestorMap[g]||0)+calcValor(c);
+  });
+  const gColors=[getVar('--chart-1'),getVar('--chart-2'),getVar('--chart-3'),getVar('--chart-4'),getVar('--chart-5')];
+  drawChart('chart-gestor','doughnut',{
+    labels:Object.keys(gestorMap),
+    datasets:[{data:Object.values(gestorMap),backgroundColor:Object.keys(gestorMap).map((_,i)=>gColors[i%gColors.length]+'cc'),borderColor:Object.keys(gestorMap).map((_,i)=>gColors[i%gColors.length]),borderWidth:2}]
+  });
 }
 
 function drawChart(id,type,data){
   const canvas=document.getElementById(id);if(!canvas)return;if(charts[id])charts[id].destroy();
-  charts[id]=new Chart(canvas,{type,data,options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{labels:{color:getVar('--text-secondary'),font:{size:10,family:'DM Sans'},padding:10},display:type==='doughnut'},tooltip:{callbacks:{label:ctx=>{const v=ctx.parsed?.y!==undefined?ctx.parsed.y:ctx.parsed;return typeof v==='number'&&v>100?` R$ ${v.toLocaleString('pt-BR',{minimumFractionDigits:2})}`:`  ${v}`;}}}},...(type==='bar'?{scales:{x:{grid:{color:getVar('--border-light')},ticks:{color:getVar('--text-tertiary'),font:{size:9}}},y:{grid:{color:getVar('--border-light')},ticks:{color:getVar('--text-tertiary'),font:{size:9},callback:v=>'R$'+(v/1000).toFixed(0)+'k'}}}}:{})}});
+  const isLine=type==='line';
+  charts[id]=new Chart(canvas,{type,data,options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{labels:{color:getVar('--text-secondary'),font:{size:10,family:'DM Sans'},padding:10},display:type==='doughnut'},tooltip:{callbacks:{label:ctx=>{const v=ctx.parsed?.y!==undefined?ctx.parsed.y:ctx.parsed;return typeof v==='number'&&v>100?` R$ ${v.toLocaleString('pt-BR',{minimumFractionDigits:2})}`:`  ${v}`;}}}},...(type!=='doughnut'?{scales:{x:{grid:{color:getVar('--border-light')},ticks:{color:getVar('--text-tertiary'),font:{size:9}}},y:{grid:{color:getVar('--border-light')},ticks:{color:getVar('--text-tertiary'),font:{size:9},callback:v=>isLine?'R$'+(v/1000).toFixed(0)+'k':typeof v==='number'&&v>100?'R$'+(v/1000).toFixed(0)+'k':v}}}}:{})}});
+}
+
+function drawChartH(id,data,unit){
+  const canvas=document.getElementById(id);if(!canvas)return;if(charts[id])charts[id].destroy();
+  charts[id]=new Chart(canvas,{type:'bar',data,options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`  ${ctx.parsed.x.toFixed(1)}${unit||''}`}}},scales:{x:{grid:{color:getVar('--border-light')},ticks:{color:getVar('--text-tertiary'),font:{size:9},callback:v=>v+''+(unit||'')},max:unit==='%'?100:undefined},y:{grid:{display:false},ticks:{color:getVar('--text-tertiary'),font:{size:9}}}}}});
+}
+
+// ═══ TOOLTIP OBJETO ═══
+let _ttEl=null;
+function showObjTooltip(e,txt){
+  if(!txt||txt==='—') return;
+  if(!_ttEl){_ttEl=document.createElement('div');_ttEl.className='obj-tooltip';document.body.appendChild(_ttEl);}
+  _ttEl.textContent=txt;
+  _ttEl.classList.add('show');
+  moveObjTooltip(e);
+}
+function moveObjTooltip(e){
+  if(!_ttEl) return;
+  const x=Math.min(e.clientX+14, window.innerWidth-330);
+  const y=e.clientY+20;
+  _ttEl.style.left=x+'px';
+  _ttEl.style.top=(y+_ttEl.offsetHeight>window.innerHeight?e.clientY-_ttEl.offsetHeight-8:y)+'px';
+}
+function hideObjTooltip(){ if(_ttEl) _ttEl.classList.remove('show'); }
+
+// ═══ LIMPAR FILTROS DATA ═══
+function limparFiltrosDatas(){
+  document.getElementById('gf-pgto-de').value='';
+  document.getElementById('gf-pgto-ate').value='';
+  renderGlobal();
 }
 
 // ═══ ACTION MENU ═══
