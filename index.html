@@ -1439,19 +1439,29 @@ function calcValorAtualEmpenho(emp){
   return v;
 }
 
-let reforcoEmpId=null;
-function openModalReforco(empenhoId){
+let reforcoEmpId=null, editReforcoMovId=null;
+function openModalReforco(empenhoId, movId){
   reforcoEmpId=empenhoId;
+  editReforcoMovId=movId||null;
   const c=DB.contratos.find(x=>x.id===currentContratoId);
   const emp=(c?.empenhos||[]).find(x=>x.id===empenhoId); if(!emp)return;
   const saldo=calcSaldoEmp(c,emp.numero);
-  document.getElementById('mtitle-reforco').textContent=`Reforçar Empenho — ${emp.numero}`;
+  if(movId){
+    const mov=(emp.movimentos||[]).find(x=>x.id===movId); if(!mov)return;
+    document.getElementById('mtitle-reforco').textContent=`Editar Reforço — ${emp.numero}`;
+    document.getElementById('reforco-valor').value=mov.valor||'';
+    document.getElementById('reforco-data').value=mov.data||'';
+    document.getElementById('reforco-sei').value=mov.sei||'';
+    document.getElementById('reforco-obs').value=mov.obs||'';
+  } else {
+    document.getElementById('mtitle-reforco').textContent=`Reforçar Empenho — ${emp.numero}`;
+    document.getElementById('reforco-valor').value='';
+    document.getElementById('reforco-data').value='';
+    document.getElementById('reforco-sei').value='';
+    document.getElementById('reforco-obs').value='';
+  }
   document.getElementById('reforco-emp-info').innerHTML=
     `Empenho: <strong>${emp.numero}</strong> (${emp.tipo}) &nbsp;|&nbsp; Valor atual: <strong>${fmt(emp.valor)}</strong> &nbsp;|&nbsp; Saldo: <strong style="color:var(--success)">${fmt(saldo)}</strong>`;
-  document.getElementById('reforco-valor').value='';
-  document.getElementById('reforco-data').value='';
-  document.getElementById('reforco-sei').value='';
-  document.getElementById('reforco-obs').value='';
   openModal('reforco');
 }
 function salvarReforco(){
@@ -1463,28 +1473,45 @@ function salvarReforco(){
   const dataReforco=document.getElementById('reforco-data').value||new Date().toISOString().split('T')[0];
   const seiReforco=uc(document.getElementById('reforco-sei').value.trim());
   if(!emp.movimentos) emp.movimentos=[];
-  emp.movimentos.push({id:uid(),tipo:'reforco',valor:valorReforco,data:dataReforco,sei:seiReforco,obs:obsReforco});
+  if(editReforcoMovId){
+    const idx=emp.movimentos.findIndex(x=>x.id===editReforcoMovId);
+    if(idx!==-1) emp.movimentos[idx]={...emp.movimentos[idx],valor:valorReforco,data:dataReforco,sei:seiReforco,obs:obsReforco};
+    toast('Reforço atualizado!','success');
+  } else {
+    emp.movimentos.push({id:uid(),tipo:'reforco',valor:valorReforco,data:dataReforco,sei:seiReforco,obs:obsReforco});
+    toast(`Reforço de ${fmt(valorReforco)} aplicado. Novo valor: ${fmt(emp.valor)}`,'success');
+  }
   emp.valor=calcValorAtualEmpenho(emp);
   saveDB(); closeModal('reforco'); renderDetail();
-  toast(`Reforço de ${fmt(valorReforco)} aplicado. Novo valor: ${fmt(emp.valor)}`,'success');
 }
 
 // ═══ CANCELAMENTO DE EMPENHO ═══
-let cancelEmpId=null;
-function openModalCancelamento(empenhoId){
+let cancelEmpId=null, editCancelMovId=null;
+function openModalCancelamento(empenhoId, movId){
   cancelEmpId=empenhoId;
+  editCancelMovId=movId||null;
   const c=DB.contratos.find(x=>x.id===currentContratoId);
   const emp=(c?.empenhos||[]).find(x=>x.id===empenhoId); if(!emp)return;
   const saldo=calcSaldoEmp(c,emp.numero);
-  document.getElementById('mtitle-cancelamento').textContent=`Cancelar Valor Parcial — ${emp.numero}`;
   document.getElementById('cancelamento-emp-info').innerHTML=
     `Empenho: <strong>${emp.numero}</strong> (${emp.tipo}) &nbsp;|&nbsp; Valor atual: <strong>${fmt(emp.valor)}</strong> &nbsp;|&nbsp; Saldo: <strong style="color:var(--success)">${fmt(saldo)}</strong>`;
-  document.getElementById('cancelamento-valor').value='';
-  document.getElementById('cancelamento-data').value='';
-  document.getElementById('cancelamento-preview').value='';
-  document.getElementById('cancelamento-sei').value='';
-  document.getElementById('cancelamento-obs').value='';
   document.getElementById('cancelamento-valor').dataset.valorAtual=emp.valor;
+  if(movId){
+    const mov=(emp.movimentos||[]).find(x=>x.id===movId); if(!mov)return;
+    document.getElementById('mtitle-cancelamento').textContent=`Editar Cancelamento — ${emp.numero}`;
+    document.getElementById('cancelamento-valor').value=mov.valor||'';
+    document.getElementById('cancelamento-data').value=mov.data||'';
+    document.getElementById('cancelamento-sei').value=mov.sei||'';
+    document.getElementById('cancelamento-obs').value=mov.obs||'';
+    previewCancelamento();
+  } else {
+    document.getElementById('mtitle-cancelamento').textContent=`Cancelar Valor Parcial — ${emp.numero}`;
+    document.getElementById('cancelamento-valor').value='';
+    document.getElementById('cancelamento-data').value='';
+    document.getElementById('cancelamento-preview').value='';
+    document.getElementById('cancelamento-sei').value='';
+    document.getElementById('cancelamento-obs').value='';
+  }
   openModal('cancelamento');
 }
 function previewCancelamento(){
@@ -1503,10 +1530,16 @@ function salvarCancelamento(){
   const dataCancel=document.getElementById('cancelamento-data').value||new Date().toISOString().split('T')[0];
   const seiCancel=uc(document.getElementById('cancelamento-sei').value.trim());
   if(!emp.movimentos) emp.movimentos=[];
-  emp.movimentos.push({id:uid(),tipo:'cancelamento',valor:valorCancel,data:dataCancel,sei:seiCancel,obs:obsCancel});
+  if(editCancelMovId){
+    const idx=emp.movimentos.findIndex(x=>x.id===editCancelMovId);
+    if(idx!==-1) emp.movimentos[idx]={...emp.movimentos[idx],valor:valorCancel,data:dataCancel,sei:seiCancel,obs:obsCancel};
+    toast('Cancelamento atualizado!','success');
+  } else {
+    emp.movimentos.push({id:uid(),tipo:'cancelamento',valor:valorCancel,data:dataCancel,sei:seiCancel,obs:obsCancel});
+    toast(`Cancelamento de ${fmt(valorCancel)} aplicado. Novo valor: ${fmt(emp.valor)}`,'warn');
+  }
   emp.valor=calcValorAtualEmpenho(emp);
   saveDB(); closeModal('cancelamento'); renderDetail();
-  toast(`Cancelamento de ${fmt(valorCancel)} aplicado. Novo valor: ${fmt(emp.valor)}`,'warn');
 }
 
 // ═══ MODAL PAGAMENTO ═══
@@ -2465,7 +2498,12 @@ function renderGlobal(){
           <td class="money" style="color:${cor};font-weight:600">${sinal}${fmt(m.valor)}</td>
           <td colspan="2" style="font-size:10px;color:var(--text-tertiary)">${m.obs||'—'}</td>
           <td onclick="event.stopPropagation()"><div class="action-wrap">
-            <button class="action-btn" onclick="excluirMovimento('${e.id}','${m.id}')" style="width:22px;height:22px;font-size:11px;color:var(--danger)" title="Excluir">🗑</button>
+            <button class="action-btn" onclick="openActionMenu(event,this)" style="width:auto;padding:0 8px;font-size:11px;font-weight:600">Ações ▾</button>
+            <div class="action-dropdown-menu">
+              <div class="action-item" onclick="${isRef?`openModalReforco('${e.id}','${m.id}')`:`openModalCancelamento('${e.id}','${m.id}')`}">✏️ Editar</div>
+              <div class="action-divider"></div>
+              <div class="action-item danger" onclick="excluirMovimento('${e.id}','${m.id}')">🗑️ Excluir</div>
+            </div>
           </div></td>
         </tr>`;
       }).join('');
