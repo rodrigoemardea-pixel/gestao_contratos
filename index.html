@@ -427,6 +427,16 @@ th.sort-desc::after{content:' ↓';opacity:1;color:var(--accent)}
 .ta-meta-key{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:0.4px;color:var(--text-tertiary)}
 .ta-meta-val{font-size:11px;font-weight:500;color:var(--text-primary)}
 .ta-obs{font-size:11px;color:var(--text-tertiary);margin-top:5px;padding-top:5px;border-top:1px solid var(--border-light)}
+.apost-hist-block{margin-top:10px;padding:8px 10px;background:var(--info-soft);border:1px solid rgba(28,78,216,.15);border-radius:var(--radius-md)}
+.apost-hist-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--accent);margin-bottom:6px}
+.apost-hist-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:3px 0;border-bottom:1px solid rgba(28,78,216,.08);font-size:11px}
+.apost-hist-row:last-child{border-bottom:none}
+.apost-hist-data{font-family:var(--font-mono);font-size:10px;color:var(--text-tertiary);min-width:72px}
+.apost-hist-de{font-family:var(--font-mono);font-size:11px;color:var(--text-secondary)}
+.apost-hist-arrow{color:var(--text-tertiary);font-size:10px}
+.apost-hist-para{font-family:var(--font-mono);font-size:11px;font-weight:600}
+.apost-hist-var{font-family:var(--font-mono);font-size:10px}
+.apost-hist-proc{font-family:var(--font-mono);font-size:9px;color:var(--text-tertiary);margin-left:4px}
 .ta-itens-list{margin-top:6px;padding-top:6px;border-top:1px solid var(--border-light)}
 .ta-item-row{display:flex;align-items:center;gap:7px;padding:3px 0;border-bottom:1px solid var(--border-light);font-size:11px}
 .ta-item-row:last-child{border-bottom:none}
@@ -1035,7 +1045,11 @@ th.sort-desc::after{content:' ↓';opacity:1;color:var(--accent)}
         <div class="fg full"><label class="fl">Item do Contrato *</label>
           <select class="fc" id="apost-item" onchange="atualizarBaseApostilamento()"><option value="">Selecione o item...</option></select>
         </div>
-        <div class="fg half"><label class="fl">Data do Apostilamento *</label><input class="fc" type="date" id="apost-data"></div>
+        <div class="fg half"><label class="fl">Data do Apostilamento *</label><input class="fc" type="date" id="apost-data" onchange="atualizarAlvoApostilamento()"></div>
+        <div class="fg half" id="apost-alvo-wrap" style="display:none">
+          <label class="fl">Afetará (vigência na data)</label>
+          <div id="apost-alvo-display" style="font-size:11px;padding:6px 9px;border-radius:var(--radius-md);border:1px solid var(--border-medium);background:var(--bg-surface-soft);color:var(--text-secondary);min-height:30px;display:flex;align-items:center;gap:6px"></div>
+        </div>
         <div class="fg half"><label class="fl">Processo SEI / NUP</label><input class="fc" type="text" id="apost-processo" placeholder="48500.001234/2025"></div>
 
         <!-- Três campos bidirecionais — preencher qualquer um calcula os outros dois -->
@@ -2195,6 +2209,7 @@ function openModalApostilamento(contratoId, apostilamentoId){
     atualizarBaseApostilamento(); // atualiza painel de contexto (limpa campos internamente)
     // Preencher campos APÓS a atualização da base
     document.getElementById('apost-data').value=apostDono.data||'';
+    atualizarAlvoApostilamento();
     document.getElementById('apost-processo').value=apostDono.processo||'';
     document.getElementById('apost-percentual').value=apostDono.percentual!=null?apostDono.percentual:'';
     document.getElementById('apost-novo-valor').value=apostDono.novoValor!=null?apostDono.novoValor:'';
@@ -2234,6 +2249,28 @@ function atualizarBaseApostilamento(){
   document.getElementById('apost-percentual').value='';
   document.getElementById('apost-novo-valor').value='';
   document.getElementById('apost-novo-vu').value='';
+}
+
+function atualizarAlvoApostilamento(){
+  const data=document.getElementById('apost-data').value;
+  const wrap=document.getElementById('apost-alvo-wrap');
+  const disp=document.getElementById('apost-alvo-display');
+  if(!wrap||!disp) return;
+  if(!data||!currentContratoId){wrap.style.display='none';return;}
+  const c=DB.contratos.find(x=>x.id===currentContratoId);
+  if(!c){wrap.style.display='none';return;}
+  const taVig=taEmVigenciaNaData(c,data);
+  wrap.style.display='';
+  if(taVig){
+    const histTA=(taVig.historicoApostilamentos||[]);
+    const valAtual=histTA.length>0?histTA[histTA.length-1].valorDepois:(taVig.valor!=null?pv(taVig.valor):null);
+    disp.innerHTML=`<span class="badge badge-purple" style="font-size:9px">TA</span> <strong>${taVig.numero}</strong> <span style="font-size:10px;color:var(--text-tertiary)">(${fmtD(taVig.inicio)} → ${fmtD(taVig.fim)})</span>${valAtual!=null?` · Valor atual: <strong style="font-family:var(--font-mono);color:var(--accent)">${fmt(valAtual)}</strong>`:''}`;
+    disp.style.borderColor='var(--purple)';
+  } else {
+    const valContr=calcValor(c);
+    disp.innerHTML=`<span class="badge badge-gray" style="font-size:9px">#0</span> <strong>Contrato Original</strong> <span style="font-size:10px;color:var(--text-tertiary)">(sem TA vigente na data)</span> · Valor atual: <strong style="font-family:var(--font-mono);color:var(--accent)">${fmt(valContr)}</strong>`;
+    disp.style.borderColor='var(--border-medium)';
+  }
 }
 
 function calcBaseVUParaApost(item, apostId){
@@ -2302,6 +2339,37 @@ function previewApostilamento(origem){
   box.style.display='';
 }
 
+// ═══ APOSTILAMENTO — identifica bloco em vigência na data e registra histórico ═══
+
+// Retorna o TA em vigência em uma data específica, ou null se for o contrato original
+function taEmVigenciaNaData(c, data){
+  if(!data) return null;
+  const tas=(c.termosAditivos||[]).filter(ta=>ta.inicio&&ta.fim);
+  // Ordena por início (mais recente primeiro) para pegar o TA vigente
+  const ordenados=[...tas].sort((a,b)=>b.inicio.localeCompare(a.inicio));
+  for(const ta of ordenados){
+    if(data>=ta.inicio&&data<=ta.fim) return ta;
+  }
+  // Verifica se está dentro da vigência original do contrato
+  return null; // contrato original ou sem vigência definida
+}
+
+// Registra histórico de alteração automática provocada por apostilamento
+function registrarHistoricoApostilamento(alvo, tipo, apostilamentoId, valorAntes, valorDepois, data, processo){
+  if(!alvo.historicoApostilamentos) alvo.historicoApostilamentos=[];
+  alvo.historicoApostilamentos.push({
+    id: uid(),
+    apostilamentoId,
+    tipo, // 'ta' ou 'contrato'
+    valorAntes: Math.round(valorAntes*100)/100,
+    valorDepois: Math.round(valorDepois*100)/100,
+    variacao: Math.round((valorDepois-valorAntes)*100)/100,
+    data,
+    processo: processo||'',
+    registradoEm: new Date().toISOString()
+  });
+}
+
 function salvarApostilamento(){
   const itemId=document.getElementById('apost-item').value;
   if(!itemId){toast('Selecione o item do contrato','error');return;}
@@ -2329,18 +2397,66 @@ function salvarApostilamento(){
   }
   novoValor=Math.round(novoValor*100)/100;
   const novoValorUnitario=novoVU?Math.round(novoVU*100)/100:undefined;
-  const dados={data,percentual,novoValor,novoValorUnitario,
-    processo:uc(document.getElementById('apost-processo').value.trim()),
-    obs:uc(document.getElementById('apost-obs').value.trim())};
+  const processo=uc(document.getElementById('apost-processo').value.trim());
+  const obs=uc(document.getElementById('apost-obs').value.trim());
+  const dados={data,percentual,novoValor,novoValorUnitario,processo,obs};
+
+  let apostId;
   if(editApostilamentoId){
     const idx=item.apostilamentos.findIndex(x=>x.id===editApostilamentoId);
     if(idx!==-1) item.apostilamentos[idx]={...item.apostilamentos[idx],...dados};
+    apostId=editApostilamentoId;
     toast('Apostilamento atualizado!','success');
   } else {
-    item.apostilamentos.push({id:uid(),...dados});
+    apostId=uid();
+    item.apostilamentos.push({id:apostId,...dados});
     toast('Apostilamento registrado!','success');
   }
+
+  // ── ATUALIZAÇÃO AUTOMÁTICA DO TA OU CONTRATO ORIGINAL EM VIGÊNCIA ──
+  // Calcula o valor total do contrato APÓS este apostilamento (soma dos itens com seus reajustes)
+  // calcValor(c) = soma de calcValorEfetivo(item) para todos os itens, que inclui item.apostilamentos
+  const valorContratoAntes = calcValor_semEsteApostItem(c, apostId, itemId);
+  const valorContratoDepois = calcValor(c);
+
+  if(Math.abs(valorContratoDepois - valorContratoAntes) > 0.001){
+    const taVigente = taEmVigenciaNaData(c, data);
+
+    if(taVigente){
+      // Há um TA vigente na data — atualiza o valor dele
+      const valorTAAntes = pv(taVigente.valor) || valorContratoAntes;
+      taVigente.valor = Math.round(valorContratoDepois * 100) / 100;
+      if(!taVigente.valorOriginalTA) taVigente.valorOriginalTA = valorTAAntes; // preserva 1ª vez
+      registrarHistoricoApostilamento(taVigente, 'ta', apostId, valorTAAntes, valorContratoDepois, data, processo);
+      // Toast extra informando a atualização
+      setTimeout(()=>toast(`📎 TA "${taVigente.numero}" atualizado: ${fmt(valorTAAntes)} → ${fmt(valorContratoDepois)}`,'warn'), 300);
+    } else {
+      // Sem TA vigente — atualiza o valor base do contrato original via registro no próprio contrato
+      const valorOrigAntes = valorContratoAntes;
+      if(!c.historicoApostilamentos) c.historicoApostilamentos=[];
+      registrarHistoricoApostilamento(c, 'contrato', apostId, valorOrigAntes, valorContratoDepois, data, processo);
+      setTimeout(()=>toast(`📄 Valor do contrato original atualizado: ${fmt(valorOrigAntes)} → ${fmt(valorContratoDepois)}`,'warn'), 300);
+    }
+  }
+
   saveDB(); closeModal('apostilamento'); renderDetail();
+}
+
+// Calcula o valor total do contrato ANTES de incluir o apostilamento de item específico
+// Replica calcValor(c) mas exclui o apostilamento apostId do item itemIdAlterado
+function calcValor_semEsteApostItem(c, apostId, itemIdAlterado){
+  return (c.itens||[]).reduce((s,it)=>{
+    if(it.id===itemIdAlterado){
+      // Calcula valor do item SEM o apostilamento em questão
+      let v=pv(it.valor);
+      for(const a of (it.apostilamentos||[])){
+        if(a.id===apostId) continue; // pula o que acabou de ser adicionado/editado
+        v=a.novoValor!=null&&pv(a.novoValor)>0?pv(a.novoValor):Math.round(v*(1+pv(a.percentual)/100)*100)/100;
+      }
+      return s+v;
+    }
+    return s+calcValorEfetivo(it);
+  },0);
 }
 
 function excluirApostilamento(apostId){
@@ -2843,6 +2959,8 @@ function renderDetail(preservarAba){
 
     const taHtml=entries.map((entry,i)=>{
       if(entry.tipo==='original'){
+        const histOrig=(c.historicoApostilamentos||[]).filter(h=>h.tipo==='contrato');
+        const histOrigHtml=histOrig.length?`<div class="apost-hist-block"><div class="apost-hist-title">📋 Histórico de Reajustes por Apostilamento</div>${histOrig.map(h=>`<div class="apost-hist-row"><span class="apost-hist-data">${fmtD(h.data)}</span><span class="apost-hist-de">${fmt(h.valorAntes)}</span><span class="apost-hist-arrow">→</span><span class="apost-hist-para" style="color:${h.variacao>=0?'var(--success)':'var(--danger)'}">${fmt(h.valorDepois)}</span><span class="apost-hist-var" style="color:${h.variacao>=0?'var(--success)':'var(--danger)'}">(${h.variacao>=0?'+':''}${fmt(h.variacao)})</span>${h.processo?`<span class="apost-hist-proc">${h.processo}</span>`:''}</div>`).join('')}</div>`:'';
         return`<div class="ta-item">
           <div class="ta-dot original"></div>
           <div class="ta-card" style="padding:12px 14px">
@@ -2856,6 +2974,7 @@ function renderDetail(preservarAba){
               ${entry.processo?`<div class="ta-meta-item"><div class="ta-meta-key">Processo SEI</div><div class="ta-meta-val" style="font-family:var(--font-mono);font-size:10px">${entry.processo}</div></div>`:''}
             </div>
             ${entry.obs?`<div class="ta-obs">📝 ${entry.obs}</div>`:''}
+            ${histOrigHtml}
           </div>
         </div>`;
       }
@@ -2867,12 +2986,15 @@ function renderDetail(preservarAba){
         const dotCls=isExpired?'ta-dot expired':'ta-dot';
         const cardCls=isActive?'ta-card active-vigencia':'ta-card';
         const taIdx=tas.findIndex(t=>t.id===entry.id)+1;
+        const histTA=(entry.historicoApostilamentos||[]);
+        const histTAHtml=histTA.length?`<div class="apost-hist-block"><div class="apost-hist-title">📋 Histórico de Reajustes por Apostilamento</div>${histTA.map(h=>`<div class="apost-hist-row"><span class="apost-hist-data">${fmtD(h.data)}</span><span class="apost-hist-de">${fmt(h.valorAntes)}</span><span class="apost-hist-arrow">→</span><span class="apost-hist-para" style="color:${h.variacao>=0?'var(--success)':'var(--danger)'}">${fmt(h.valorDepois)}</span><span class="apost-hist-var" style="color:${h.variacao>=0?'var(--success)':'var(--danger)'}">(${h.variacao>=0?'+':''}${fmt(h.variacao)})</span>${h.processo?`<span class="apost-hist-proc">${h.processo}</span>`:''}</div>`).join('')}</div>`:'';
+        const valorAtualTA=histTA.length>0?histTA[histTA.length-1].valorDepois:(entry.valor!=null?entry.valor:null);
         return`<div class="ta-item">
           <div class="${dotCls}"></div>
           <div class="${cardCls}" style="padding:12px 14px">
             <div class="ta-card-head" style="padding:0;margin-bottom:8px">
               <span class="ta-num">#${taIdx}</span>
-              <span class="ta-title" style="display:flex;align-items:center;gap:6px">${entry.numero} <span class="badge badge-purple" style="font-size:9px">TA</span></span>
+              <span class="ta-title" style="display:flex;align-items:center;gap:6px">${entry.numero} <span class="badge badge-purple" style="font-size:9px">TA</span>${histTA.length?`<span class="badge badge-warn" style="font-size:9px">📝 ${histTA.length} reajuste${histTA.length>1?'s':''}</span>`:''}</span>
               <div style="display:flex;gap:5px;flex-shrink:0;align-items:center">
                 ${isActive?`<span class="vigencia-atual-badge">● Vigência Atual</span>`:''}
                 <button class="btn btn-ghost btn-xs" onclick="openModalTermoAditivo('${c.id}','${entry.id}')">✏️ Editar</button>
@@ -2883,10 +3005,12 @@ function renderDetail(preservarAba){
               <div class="ta-meta-item"><div class="ta-meta-key">Início</div><div class="ta-meta-val">${fmtD(entry.inicio)}</div></div>
               <div class="ta-meta-item"><div class="ta-meta-key">Fim</div><div class="ta-meta-val">${fmtD(entry.fim)}</div></div>
               ${entry.dataAssinatura?`<div class="ta-meta-item"><div class="ta-meta-key">Assinatura</div><div class="ta-meta-val">${fmtD(entry.dataAssinatura)}</div></div>`:''}
-              ${entry.valor!=null?`<div class="ta-meta-item"><div class="ta-meta-key">Valor do Contrato (TA)</div><div class="ta-meta-val" style="font-family:var(--font-mono);color:var(--accent);font-weight:600">${fmt(entry.valor)}</div></div>`:''}
+              ${entry.valorOriginalTA!=null&&histTA.length?`<div class="ta-meta-item"><div class="ta-meta-key">Valor Original (TA)</div><div class="ta-meta-val" style="font-family:var(--font-mono);color:var(--text-tertiary);text-decoration:line-through">${fmt(entry.valorOriginalTA)}</div></div>`:''}
+              ${valorAtualTA!=null?`<div class="ta-meta-item"><div class="ta-meta-key">Valor${histTA.length?' Atual (c/ reajustes)':''}</div><div class="ta-meta-val" style="font-family:var(--font-mono);color:var(--accent);font-weight:600">${fmt(valorAtualTA)}</div></div>`:''}
               ${entry.processo?`<div class="ta-meta-item"><div class="ta-meta-key">Processo SEI</div><div class="ta-meta-val" style="font-family:var(--font-mono);font-size:10px">${entry.processo}</div></div>`:''}
             </div>
             ${entry.obs?`<div class="ta-obs">📝 ${entry.obs}</div>`:''}
+            ${histTAHtml}
           </div>
         </div>`;
       }
