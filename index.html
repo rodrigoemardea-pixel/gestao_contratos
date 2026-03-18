@@ -1615,7 +1615,7 @@ function salvarEmpenho(){
     c.empenhos.push({id:uid(),...dados});
     toast('Empenho adicionado!','success');
   }
-  saveDB(); closeModal('empenho'); renderDetail();
+  saveDB(); closeModal('empenho'); renderDetail(globalTab);
 }
 function excluirEmpenho(empenhoId){
   if(!confirm('Excluir este empenho e todos os pagamentos vinculados?'))return;
@@ -1623,7 +1623,7 @@ function excluirEmpenho(empenhoId){
   const emp=(c.empenhos||[]).find(x=>x.id===empenhoId);
   if(emp) c.pagamentos=(c.pagamentos||[]).filter(p=>p.empenhoNumero!==emp.numero);
   c.empenhos=(c.empenhos||[]).filter(x=>x.id!==empenhoId);
-  saveDB(); renderDetail(); toast('Empenho excluído.','warn');
+  saveDB(); renderDetail(globalTab); toast('Empenho excluído.','warn');
 }
 function excluirMovimento(empenhoId, movId){
   if(!confirm('Excluir este movimento? O valor do empenho será recalculado.'))return;
@@ -1631,7 +1631,7 @@ function excluirMovimento(empenhoId, movId){
   const emp=(c.empenhos||[]).find(x=>x.id===empenhoId); if(!emp)return;
   emp.movimentos=(emp.movimentos||[]).filter(x=>x.id!==movId);
   emp.valor=calcValorAtualEmpenho(emp);
-  saveDB(); renderDetail(); toast('Movimento excluído.','warn');
+  saveDB(); renderDetail(globalTab); toast('Movimento excluído.','warn');
 }
 
 // Recalcula valor do empenho: valorOriginal + reforços - cancelamentos
@@ -1690,7 +1690,7 @@ function salvarReforco(){
     toast(`Reforço de ${fmt(valorReforco)} aplicado. Novo valor: ${fmt(emp.valor)}`,'success');
   }
   emp.valor=calcValorAtualEmpenho(emp);
-  saveDB(); closeModal('reforco'); renderDetail();
+  saveDB(); closeModal('reforco'); renderDetail(globalTab);
 }
 
 // ═══ CANCELAMENTO DE EMPENHO ═══
@@ -1747,7 +1747,7 @@ function salvarCancelamento(){
     toast(`Cancelamento de ${fmt(valorCancel)} aplicado. Novo valor: ${fmt(emp.valor)}`,'warn');
   }
   emp.valor=calcValorAtualEmpenho(emp);
-  saveDB(); closeModal('cancelamento'); renderDetail();
+  saveDB(); closeModal('cancelamento'); renderDetail(globalTab);
 }
 
 // ═══ MODAL PAGAMENTO ═══
@@ -1873,13 +1873,13 @@ function salvarPagamento(){
     c.pagamentos.push({id:uid(),...dados});
     toast('Pagamento registrado!','success');
   }
-  saveDB(); closeModal('pagamento'); renderDetail();
+  saveDB(); closeModal('pagamento'); renderDetail(globalTab);
 }
 function excluirPagamento(pgId){
   if(!confirm('Excluir este pagamento?'))return;
   const c=DB.contratos.find(x=>x.id===currentContratoId); if(!c)return;
   c.pagamentos=(c.pagamentos||[]).filter(x=>x.id!==pgId);
-  saveDB(); renderDetail(); toast('Pagamento excluído.','warn');
+  saveDB(); renderDetail(globalTab); toast('Pagamento excluído.','warn');
 }
 
 // ═══ VALOR EFETIVO DO ITEM (aplica reajustes acumulados) ═══
@@ -2535,23 +2535,24 @@ function renderItemCardHtml(item, c){
 }
 
 // ═══ RENDER DETAIL ═══
-function renderDetail(){
+function renderDetail(preservarAba){
   const c=DB.contratos.find(x=>x.id===currentContratoId); if(!c){showList();return;}
 
-  // Resetar para aba de empenhos sempre que mudar de contrato
-  globalTab='emp';
+  // Se preservarAba foi passado, manter a aba atual; senão resetar para 'emp'
+  const abaAtiva = preservarAba || 'emp';
+  globalTab = abaAtiva;
   ['emp','pgto','timeline','notas'].forEach(t=>{
-    document.getElementById('gl-tab-'+t)?.classList.toggle('active',t==='emp');
+    document.getElementById('gl-tab-'+t)?.classList.toggle('active',t===abaAtiva);
     const pane=document.getElementById('gl-pane-'+t);
-    if(pane) pane.style.display=t==='emp'?'':'none';
+    if(pane) pane.style.display=t===abaAtiva?'':'none';
     const filt=document.getElementById('gl-filters-'+t);
-    if(filt) filt.style.display=t==='emp'?'':'none';
+    if(filt) filt.style.display=t===abaAtiva?'':'none';
   });
-  // Limpar containers das abas secundárias
+  // Limpar containers das abas secundárias apenas se não estiverem ativas
   const htEl=document.getElementById('htimeline-container');
-  if(htEl) htEl.innerHTML='';
+  if(htEl && abaAtiva!=='timeline') htEl.innerHTML='';
   const notasEl=document.getElementById('lista-notas');
-  if(notasEl) notasEl.innerHTML='';
+  if(notasEl && abaAtiva!=='notas') notasEl.innerHTML='';
 
   document.getElementById('breadcrumb-nome').textContent=c.numero+' — '+c.fornecedor;
   const ve=vigenciaEfetiva(c);
