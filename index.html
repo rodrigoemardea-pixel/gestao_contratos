@@ -1886,6 +1886,20 @@ function calcValorEfetivo(item){
   return v;
 }
 
+// Retorna o valor do item ANTES de um apostilamento específico (para edição correta)
+function calcBaseItemParaApost(item, apostId){
+  let v = pv(item.valor);
+  for(const a of (item.apostilamentos||[])){
+    if(a.id === apostId) break; // para antes do apostilamento sendo editado
+    if(a.novoValor!=null && pv(a.novoValor)>0){
+      v = pv(a.novoValor);
+    } else {
+      v = Math.round(v * (1 + pv(a.percentual) / 100) * 100) / 100;
+    }
+  }
+  return v;
+}
+
 // ═══ APOSTILAMENTO — lógica de contrato ═══
 // O apostilamento reajusta o valor do último TA (ou contrato original).
 // Fica em c.apostilamentos[] com: {id, data, percentual, novoValor, processo, obs, baseId ('original'|taId)}
@@ -1995,12 +2009,14 @@ function openModalApostilamento(contratoId, apostilamentoId){
     }
     if(!itemDono){toast('Apostilamento não encontrado','error');return;}
     selItem.value=itemDono.id;
-    atualizarBaseApostilamento();
+    atualizarBaseApostilamento(); // atualiza painel de contexto (limpa campos internamente)
+    // Preencher campos APÓS a atualização da base
     document.getElementById('apost-data').value=apostDono.data||'';
     document.getElementById('apost-processo').value=apostDono.processo||'';
-    document.getElementById('apost-percentual').value=apostDono.percentual||'';
+    document.getElementById('apost-percentual').value=apostDono.percentual!=null?apostDono.percentual:'';
     document.getElementById('apost-novo-valor').value=apostDono.novoValor!=null?apostDono.novoValor:'';
     document.getElementById('apost-obs').value=apostDono.obs||'';
+    document.getElementById('apost-preview-box').style.display='none';
   } else {
     // Pré-selecionar se só houver 1 item
     if((c.itens||[]).length===1){ selItem.value=c.itens[0].id; atualizarBaseApostilamento(); }
@@ -2016,13 +2032,16 @@ function atualizarBaseApostilamento(){
   const c=DB.contratos.find(x=>x.id===currentContratoId); if(!c||!itemId) return;
   const item=(c.itens||[]).find(x=>x.id===itemId); if(!item) return;
   const valEfetivo=calcValorEfetivo(item);
+  // Se editando, mostra o valor ANTES do apostilamento atual como base
+  const valBase = editApostilamentoId ? calcBaseItemParaApost(item, editApostilamentoId) : valEfetivo;
   const nApos=(item.apostilamentos||[]).length;
   document.getElementById('apost-contrato-info').innerHTML=`
     <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center">
       <div><span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-tertiary)">Contrato</span><br><strong>${c.numero} — ${c.fornecedor}</strong></div>
       <div><span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-tertiary)">Item Selecionado</span><br><strong>${item.nome} (${item.tipo})</strong></div>
-      <div><span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-tertiary)">Valor Base do Item</span><br><strong style="font-family:var(--font-mono);color:var(--warning)">${fmt(item.valor)}</strong></div>
-      <div><span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-tertiary)">Valor Atual c/ Reajustes</span><br><strong style="font-family:var(--font-mono);color:var(--success)">${fmt(valEfetivo)}</strong></div>
+      <div><span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-tertiary)">Valor Original do Item</span><br><strong style="font-family:var(--font-mono);color:var(--text-tertiary)">${fmt(item.valor)}</strong></div>
+      <div><span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-tertiary)">${editApostilamentoId?'Base (antes deste apostilamento)':'Valor Atual c/ Reajustes'}</span><br><strong style="font-family:var(--font-mono);color:var(--warning)">${fmt(valBase)}</strong></div>
+      ${editApostilamentoId?`<div><span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-tertiary)">Valor Atual c/ Todos</span><br><strong style="font-family:var(--font-mono);color:var(--success)">${fmt(valEfetivo)}</strong></div>`:''}
       <div><span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-tertiary)">Apostilamentos</span><br><strong>${nApos}</strong></div>
     </div>`;
   // Limpa preview e campos de valor ao trocar item
@@ -2035,7 +2054,9 @@ function previewApostilamento(origem){
   const c=DB.contratos.find(x=>x.id===currentContratoId); if(!c)return;
   const itemId=document.getElementById('apost-item').value;
   const item=itemId?(c.itens||[]).find(x=>x.id===itemId):null;
-  const base = item ? calcValorEfetivo(item) : 0;
+  if(!item){ document.getElementById('apost-preview-box').style.display='none'; return; }
+  // Se estiver editando, base é o valor ANTES do apostilamento atual
+  const base = editApostilamentoId ? calcBaseItemParaApost(item, editApostilamentoId) : calcValorEfetivo(item);
   if(!base){ document.getElementById('apost-preview-box').style.display='none'; return; }
 
   const box = document.getElementById('apost-preview-box');
@@ -2047,7 +2068,7 @@ function previewApostilamento(origem){
       document.getElementById('apost-novo-valor').value='';
       box.style.display='none'; return;
     }
-    const novoValor=base*(1+pct/100);
+    const novoValor=Math.round(base*(1+pct/100)*100)/100;
     document.getElementById('apost-novo-valor').value=novoValor.toFixed(2);
     mostrarPreview(base, pct, novoValor, content, box);
   } else if(origem==='val'){
@@ -2084,12 +2105,13 @@ function salvarApostilamento(){
   const item=(c.itens||[]).find(x=>x.id===itemId); if(!item){toast('Item não encontrado','error');return;}
   if(!item.apostilamentos) item.apostilamentos=[];
 
-  const base=calcValorEfetivo(item);
+  // Base correta: se editando, exclui o apostilamento atual do cálculo
+  const base = editApostilamentoId ? calcBaseItemParaApost(item, editApostilamentoId) : calcValorEfetivo(item);
   let percentual=pv(pctStr);
   let novoValor=pv(novoValorStr);
   if(pctStr!==''&&novoValorStr==='') novoValor=Math.round(base*(1+percentual/100)*100)/100;
   if(novoValorStr!==''&&pctStr==='') percentual=base>0?((novoValor/base)-1)*100:0;
-  // Sempre arredondar novoValor para 2 casas decimais para evitar divergência de ponto flutuante
+  // Sempre arredondar novoValor para 2 casas decimais
   novoValor=Math.round(novoValor*100)/100;
 
   const dados={
