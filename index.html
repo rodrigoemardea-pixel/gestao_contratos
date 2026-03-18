@@ -3377,25 +3377,21 @@ function renderTimeline(){
     entries.push({tipo:'emp',label:e.numero,data:e.data||(e.ano?e.ano+'-01-01':null),val:e.valor,info:`Empenho ${e.ano||''}${e.sei?' · '+e.sei:''}`})
   );
 
-  // Pagamentos — agrupa por mês/ano para não poluir
-  const pgMes={};
+  // Pagamentos — exibe cada um individualmente, data = último dia do mês
   (c.pagamentos||[]).forEach(p=>{
     const m=MESES_CURTOS.indexOf((p.mes||'').toUpperCase());
-    const key=`${p.ano}-${String(m+1).padStart(2,'0')}`;
-    if(!pgMes[key]){
-      // Último dia do mês: new Date(ano, mes, 0) retorna o último dia do mês anterior ao mes+1
-      let dataUltDia=null;
-      if(p.ano&&m>=0){
-        const ultimo=new Date(parseInt(p.ano), m+1, 0).getDate();
-        dataUltDia=`${p.ano}-${String(m+1).padStart(2,'0')}-${String(ultimo).padStart(2,'0')}`;
-      }
-      pgMes[key]={mes:p.mes,ano:p.ano,total:0,count:0,data:dataUltDia};
+    let data=null;
+    if(p.ano&&m>=0){
+      const ultimo=new Date(parseInt(p.ano), m+1, 0).getDate();
+      data=`${p.ano}-${String(m+1).padStart(2,'0')}-${String(ultimo).padStart(2,'0')}`;
     }
-    pgMes[key].total+=pv(p.apagar);
-    pgMes[key].count++;
-  });
-  Object.values(pgMes).forEach(pg=>{
-    if(pg.data) entries.push({tipo:'pgto',label:`${pg.mes}/${pg.ano}`,data:pg.data,val:pg.total,info:`${pg.count} pagamento${pg.count>1?'s':''} · ${fmt(pg.total)}`});
+    if(data) entries.push({
+      tipo:'pgto',
+      label:`${p.mes}/${p.ano}`,
+      data,
+      val:pv(p.apagar),
+      info:`NF: ${p.nf||'—'}${p.sei?' · SEI: '+p.sei:''}${p.empenhoNumero?' · Emp: '+p.empenhoNumero:''}`
+    });
   });
 
   entries.sort((a,b)=>(a.data||'').localeCompare(b.data||''));
