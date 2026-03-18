@@ -2688,7 +2688,7 @@ function renderItemCardHtml(item, c){
       const vuInfo=a.novoValorUnitario&&item.qtd?` · VU: ${fmt(a.novoValorUnitario)}/un`:'';
       return`<div class="apost-row">
         <span class="apost-pct">${pv(a.percentual)>0?'+':''}${pv(a.percentual).toFixed(2)}%</span>
-        <span class="apost-info">${fmtD(a.data)}${a.processo?` · ${a.processo}`:''}${a.obs?` · ${a.obs}':''}${vuInfo}</span>
+        <span class="apost-info">${fmtD(a.data)}${a.processo?` · ${a.processo}`:''}${a.obs?` · ${a.obs}`:''}${vuInfo}</span>
         <span class="apost-result">→ ${fmt(novoVal)}</span>
         <div class="action-wrap" onclick="event.stopPropagation()">
           <button class="action-btn" onclick="openActionMenu(event,this)" style="width:22px;height:22px;font-size:11px">⋯</button>
