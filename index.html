@@ -969,11 +969,24 @@ th.sort-desc::after{content:' ↓';opacity:1;color:var(--accent)}
           <select class="fc" id="p-empenho" onchange="preencherItemPorEmpenho()"><option value="">— selecione mês/ano primeiro —</option></select>
         </div>
         <div class="fg full"><label class="fl">Item do Contrato *</label>
-          <select class="fc" id="p-item"><option value="">Selecione o item...</option></select>
+          <select class="fc" id="p-item" onchange="preencherVUPorItem()"><option value="">Selecione o item...</option></select>
+        </div>
+        <div id="p-qtd-section" style="display:contents">
+          <div class="fg third"><label class="fl">Qtd. Consumida</label>
+            <input class="fc" type="number" id="p-qtd" placeholder="Ex: 3" step="0.001" min="0" oninput="calcValorPorQtd()">
+          </div>
+          <div class="fg third"><label class="fl">Valor Unitário (R$)</label>
+            <input class="fc" type="number" id="p-vu" placeholder="Calculado do item" step="0.01" min="0" disabled
+              style="font-family:var(--font-mono);background:var(--bg-inset);color:var(--text-tertiary)">
+          </div>
+          <div class="fg third" style="align-self:end">
+            <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-tertiary);margin-bottom:4px">Referência do Item</div>
+            <div id="p-item-ref" style="font-size:11px;color:var(--text-tertiary);padding:7px 10px;background:var(--bg-inset);border-radius:var(--radius-md);font-family:var(--font-mono)">—</div>
+          </div>
         </div>
         <div class="fg half"><label class="fl">Número da Nota Fiscal</label><input class="fc" type="text" id="p-nf" placeholder="Nº da NF"></div>
         <div class="fg half"><label class="fl">Processo SEI</label><input class="fc" type="text" id="p-sei" placeholder="48500.001234/2025"></div>
-        <div class="fg third"><label class="fl">Valor Total (R$) *</label><input class="fc" type="number" id="p-valor" placeholder="0,00" step="0.01" oninput="calcAPagar()"></div>
+        <div class="fg third"><label class="fl">Valor Total (R$) *</label><input class="fc" type="number" id="p-valor" placeholder="0,00" step="0.01" oninput="calcAPagar();calcQtdPorValor()"></div>
         <div class="fg third"><label class="fl">Glosa (R$)</label><input class="fc" type="number" id="p-glosa" placeholder="0,00" step="0.01" value="0" oninput="calcAPagar()"></div>
         <div class="fg third"><label class="fl">Valor a Pagar (R$)</label><input class="fc" id="p-apagar" disabled style="color:var(--success);font-family:var(--font-mono);font-weight:500"></div>
         <div class="fg full"><label class="fl">Observação</label><input class="fc" type="text" id="p-outro" placeholder="Observação adicional..."></div>
@@ -1235,6 +1248,48 @@ function calcAPagar(){
   document.getElementById('p-apagar').value=ap>0?fmt(ap):'';
 }
 
+function preencherVUPorItem(){
+  preencherItemPorEmpenho(); // mantém lógica existente de preencher empenho
+  const itemId=document.getElementById('p-item').value;
+  const vuEl=document.getElementById('p-vu');
+  const refEl=document.getElementById('p-item-ref');
+  const qtdEl=document.getElementById('p-qtd');
+  if(!itemId||!currentContratoId){ if(vuEl) vuEl.value=''; if(refEl) refEl.textContent='—'; return; }
+  const c=DB.contratos.find(x=>x.id===currentContratoId); if(!c) return;
+  const item=(c.itens||[]).find(x=>x.id===itemId); if(!item) return;
+  const vu=item.valorUnitario||null;
+  const qtdContrato=item.qtd||null;
+  const valEfetivo=calcValorEfetivo(item);
+  if(vuEl) vuEl.value=vu?vu.toFixed(2):'';
+  if(refEl) refEl.textContent=qtdContrato&&vu
+    ? `${qtdContrato} un × ${fmt(vu)} = ${fmt(valEfetivo)}`
+    : `Total: ${fmt(valEfetivo)}`;
+  // Se já tem qtd preenchida, recalcula o valor
+  if(qtdEl&&pv(qtdEl.value)>0&&vu) calcValorPorQtd();
+}
+
+function calcValorPorQtd(){
+  const qtd=pv(document.getElementById('p-qtd').value);
+  const itemId=document.getElementById('p-item').value;
+  if(!qtd||!itemId||!currentContratoId) return;
+  const c=DB.contratos.find(x=>x.id===currentContratoId); if(!c) return;
+  const item=(c.itens||[]).find(x=>x.id===itemId); if(!item||!item.valorUnitario) return;
+  const val=Math.round(qtd*item.valorUnitario*100)/100;
+  document.getElementById('p-valor').value=val.toFixed(2);
+  calcAPagar();
+}
+
+function calcQtdPorValor(){
+  const val=pv(document.getElementById('p-valor').value);
+  const itemId=document.getElementById('p-item').value;
+  const qtdEl=document.getElementById('p-qtd');
+  if(!val||!itemId||!currentContratoId||!qtdEl) return;
+  const c=DB.contratos.find(x=>x.id===currentContratoId); if(!c) return;
+  const item=(c.itens||[]).find(x=>x.id===itemId); if(!item||!item.valorUnitario) return;
+  const qtd=Math.round((val/item.valorUnitario)*1000)/1000;
+  qtdEl.value=qtd;
+}
+
 // ═══ GESTORES ═══
 function atualizarSelectsGestores(){
   const gEl=document.getElementById('c-gestor');
@@ -1307,6 +1362,43 @@ function recalcValorContrato(){
   if(el) el.value=total>0?fmt(total):'—';
 }
 
+function recalcItemValor(idx){
+  const it=cItensTemp[idx];
+  const qtd=pv(it.qtd)||0;
+  const vu=pv(it.valorUnitario)||0;
+  if(qtd>0&&vu>0){
+    it.valor=Math.round(qtd*vu*100)/100;
+    // Atualizar campo de valor total do item
+    const elVal=document.getElementById(`c-item-valor-${idx}`);
+    if(elVal) elVal.value=it.valor;
+  }
+  recalcValorContrato();
+}
+
+function recalcItemQtdOuVU(idx, origem){
+  const it=cItensTemp[idx];
+  if(origem==='valor'){
+    // Usuário editou valor total — recalcula qtd se VU informado
+    const vu=pv(it.valorUnitario)||0;
+    const val=pv(it.valor)||0;
+    if(vu>0&&val>0){
+      it.qtd=Math.round((val/vu)*1000)/1000;
+      const elQtd=document.getElementById(`c-item-qtd-${idx}`);
+      if(elQtd) elQtd.value=it.qtd;
+    }
+  } else if(origem==='vu'){
+    // Usuário editou VU — recalcula valor se qtd informada
+    const qtd=pv(it.qtd)||0;
+    const vu=pv(it.valorUnitario)||0;
+    if(qtd>0&&vu>0){
+      it.valor=Math.round(qtd*vu*100)/100;
+      const elVal=document.getElementById(`c-item-valor-${idx}`);
+      if(elVal) elVal.value=it.valor;
+    }
+  }
+  recalcValorContrato();
+}
+
 function renderItensContrato(){
   const cont=document.getElementById('c-itens-container'); if(!cont) return;
   if(!cItensTemp.length){
@@ -1314,28 +1406,41 @@ function renderItensContrato(){
     recalcValorContrato(); return;
   }
   cont.innerHTML=cItensTemp.map((it,idx)=>`
-    <div style="display:grid;grid-template-columns:1fr 130px 130px 32px;gap:8px;align-items:end;padding:8px 10px;background:var(--bg-surface-soft);border:1px solid var(--border-light);border-radius:var(--radius-md)">
-      <div class="fg"><label class="fl">Nome do Item *</label>
-        <input class="fc" type="text" value="${it.nome||''}" oninput="cItensTemp[${idx}].nome=this.value.toUpperCase();this.value=this.value.toUpperCase()" placeholder="Descrição do item...">
+    <div style="background:var(--bg-surface-soft);border:1px solid var(--border-light);border-radius:var(--radius-md);padding:10px 12px;display:flex;flex-direction:column;gap:8px">
+      <div style="display:grid;grid-template-columns:1fr 110px 32px;gap:8px;align-items:end">
+        <div class="fg"><label class="fl">Nome do Item *</label>
+          <input class="fc" type="text" value="${it.nome||''}" oninput="cItensTemp[${idx}].nome=this.value.toUpperCase();this.value=this.value.toUpperCase()" placeholder="Descrição do item...">
+        </div>
+        <div class="fg"><label class="fl">Tipo *</label>
+          <select class="fc" onchange="cItensTemp[${idx}].tipo=this.value">
+            <option value="CUSTEIO" ${it.tipo==='CUSTEIO'?'selected':''}>CUSTEIO</option>
+            <option value="INVESTIMENTO" ${it.tipo==='INVESTIMENTO'?'selected':''}>INVESTIMENTO</option>
+          </select>
+        </div>
+        <button type="button" onclick="removerItemContrato(${idx})"
+          style="height:32px;width:32px;background:var(--danger-soft);border:1px solid rgba(220,38,38,.2);border-radius:var(--radius-md);cursor:pointer;color:var(--danger);font-size:13px;display:flex;align-items:center;justify-content:center;align-self:end">✕</button>
       </div>
-      <div class="fg"><label class="fl">Tipo *</label>
-        <select class="fc" onchange="cItensTemp[${idx}].tipo=this.value">
-          <option value="CUSTEIO" ${it.tipo==='CUSTEIO'?'selected':''}>CUSTEIO</option>
-          <option value="INVESTIMENTO" ${it.tipo==='INVESTIMENTO'?'selected':''}>INVESTIMENTO</option>
-        </select>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;align-items:end;padding-top:6px;border-top:1px dashed var(--border-light)">
+        <div class="fg"><label class="fl">Qtd *</label>
+          <input class="fc" type="number" id="c-item-qtd-${idx}" value="${it.qtd||''}" step="0.001" min="0" placeholder="Ex: 12"
+            oninput="cItensTemp[${idx}].qtd=parseFloat(this.value)||0;recalcItemValor(${idx})">
+        </div>
+        <div class="fg"><label class="fl">Valor Unitário (R$) *</label>
+          <input class="fc" type="number" id="c-item-vu-${idx}" value="${it.valorUnitario||''}" step="0.01" min="0" placeholder="0,00"
+            oninput="cItensTemp[${idx}].valorUnitario=parseFloat(this.value)||0;recalcItemQtdOuVU(${idx},'vu')">
+        </div>
+        <div class="fg"><label class="fl">Valor Total (R$)</label>
+          <input class="fc" type="number" id="c-item-valor-${idx}" value="${it.valor||''}" step="0.01" min="0" placeholder="Calculado automaticamente"
+            style="color:var(--accent);font-family:var(--font-mono);font-weight:600"
+            oninput="cItensTemp[${idx}].valor=parseFloat(this.value)||0;recalcItemQtdOuVU(${idx},'valor');recalcValorContrato()">
+        </div>
       </div>
-      <div class="fg"><label class="fl">Valor (R$) *</label>
-        <input class="fc" type="number" value="${it.valor||''}" step="0.01" placeholder="0,00"
-          oninput="cItensTemp[${idx}].valor=parseFloat(this.value)||0;recalcValorContrato()">
-      </div>
-      <button type="button" onclick="removerItemContrato(${idx})"
-        style="height:32px;width:32px;background:var(--danger-soft);border:1px solid rgba(212,43,43,.2);border-radius:var(--radius-md);cursor:pointer;color:var(--danger);font-size:13px;display:flex;align-items:center;justify-content:center;align-self:end">✕</button>
     </div>`).join('');
   recalcValorContrato();
 }
 
 function adicionarItemContrato(){
-  cItensTemp.push({id:uid(),nome:'',tipo:'CUSTEIO',valor:0,empenhos:[],pagamentos:[],apostilamentos:[]});
+  cItensTemp.push({id:uid(),nome:'',tipo:'CUSTEIO',qtd:0,valorUnitario:0,valor:0,empenhos:[],pagamentos:[],apostilamentos:[]});
   renderItensContrato();
 }
 
@@ -1399,6 +1504,8 @@ function salvarContrato(){
     itens:itensValidos.map(it=>({
       ...it,
       nome:uc(it.nome),
+      qtd:pv(it.qtd)||null,
+      valorUnitario:pv(it.valorUnitario)||null,
       empenhos:it.empenhos||[],
       pagamentos:it.pagamentos||[],
       apostilamentos:it.apostilamentos||[]
@@ -1845,6 +1952,8 @@ function openModalPagamento(pagamentoId){
     filtrarEmpenhosPorAno();
     document.getElementById('p-empenho').value=pg.empenhoNumero||'';
     document.getElementById('p-item').value=pg.itemId||'';
+    preencherVUPorItem();
+    document.getElementById('p-qtd').value=pg.qtdPaga||'';
     document.getElementById('p-nf').value=pg.nf||'';
     document.getElementById('p-sei').value=pg.sei||'';
     document.getElementById('p-valor').value=pg.valor||'';
@@ -1853,11 +1962,13 @@ function openModalPagamento(pagamentoId){
     calcAPagar();
   } else {
     document.getElementById('mtitle-pagamento').textContent='Novo Pagamento';
-    ['p-nf','p-sei','p-valor','p-outro'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+    ['p-nf','p-sei','p-valor','p-outro','p-qtd'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
     document.getElementById('p-glosa').value='0'; document.getElementById('p-apagar').value='';
     document.getElementById('p-mes').value=''; document.getElementById('p-ano').value='';
     document.getElementById('p-virada-exercicio').checked=false;
     document.getElementById('p-empenho').innerHTML='<option value="">— selecione mês/ano primeiro —</option>';
+    document.getElementById('p-vu').value='';
+    document.getElementById('p-item-ref').textContent='—';
   }
   openModal('pagamento');
 }
@@ -1873,8 +1984,10 @@ function salvarPagamento(){
   const c=DB.contratos.find(x=>x.id===currentContratoId); if(!c)return;
   if(!c.pagamentos)c.pagamentos=[];
   const viradaExercicio=document.getElementById('p-virada-exercicio')?.checked||false;
+  const qtdPaga=pv(document.getElementById('p-qtd').value)||undefined;
   const dados={empenhoNumero,itemId,mes,ano,valor,glosa,apagar,
     viradaExercicio:viradaExercicio||undefined,
+    qtdPaga,
     nf:uc(document.getElementById('p-nf').value.trim()),
     sei:uc(document.getElementById('p-sei').value.trim()),
     outro:uc(document.getElementById('p-outro').value.trim())};
@@ -2523,6 +2636,7 @@ function renderItemCardHtml(item, c){
         <div class="ic-name">${item.nome}</div>
         <div class="ic-meta">
           <span class="badge ${tipoCls}">${item.tipo}</span>
+          ${item.qtd&&item.valorUnitario?`<span style="color:var(--text-tertiary);font-size:10px;font-family:var(--font-mono)">${item.qtd} un × ${fmt(item.valorUnitario)}</span>`:''}
           ${hasA?`<span class="badge badge-warn">📎 ${item.apostilamentos.length} Reajuste(s)</span>`:''}
           ${item.obs?`<span style="color:var(--text-tertiary);font-size:10px">${item.obs}</span>`:''}
         </div>
@@ -2948,7 +3062,7 @@ function renderGlobal(){
       <td class="mono">${p.mes||'—'}/${p.ano||'—'}</td>
       <td class="mono">${p.nf||'—'}</td>
       <td class="mono" style="font-size:10px">${p.sei||'—'}</td>
-      <td class="money">${fmt(p.valor)}</td>
+      <td class="money">${p.qtdPaga!=null?`<span style="font-size:10px;color:var(--text-tertiary)">${p.qtdPaga} un<br></span>`:''}${fmt(p.valor)}</td>
       <td class="money" style="color:var(--danger)">${pv(p.glosa)>0?fmt(p.glosa):'—'}</td>
       <td class="money" style="color:var(--success)">${fmt(p.apagar)}</td>
       <td>${p.outro||'—'}</td>
