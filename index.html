@@ -947,7 +947,7 @@ th.sort-desc::after{content:' ↓';opacity:1;color:var(--accent)}
     <div class="modal-body">
       <div class="form-grid">
         <div class="fg half"><label class="fl">Mês *</label>
-          <select class="fc" id="p-mes" onchange="filtrarEmpenhosPorAno()">
+          <select class="fc" id="p-mes" onchange="filtrarEmpenhosPorAno();if(document.getElementById('p-item').value)preencherVUPorItem()">
             <option value="">Selecione o mês...</option>
             <option value="JAN">JANEIRO</option><option value="FEV">FEVEREIRO</option><option value="MAR">MARÇO</option>
             <option value="ABR">ABRIL</option><option value="MAI">MAIO</option><option value="JUN">JUNHO</option>
@@ -1240,7 +1240,37 @@ function calcSaldoEmp(c,empNumero){
   return pv(emp.valor)-pago;
 }
 
-// ═══ CALC A PAGAR ═══
+// Retorna o valor unitário efetivo do item em uma data específica
+// (considera apostilamentos com data <= dataPagamento)
+function calcVUEfetivo(item, dataPagamento){
+  if(!item.valorUnitario) return null; // item sem VU cadastrado
+  let vu = pv(item.valorUnitario);
+  const aposOrdenados=[...(item.apostilamentos||[])].sort((a,b)=>(a.data||'').localeCompare(b.data||''));
+  for(const a of aposOrdenados){
+    // Só aplica apostilamentos com data anterior ou igual à data do pagamento
+    if(dataPagamento && a.data && a.data > dataPagamento) break;
+    // Usa novoValorUnitario se salvo, senão recalcula pelo percentual
+    if(a.novoValorUnitario!=null && pv(a.novoValorUnitario)>0){
+      vu = pv(a.novoValorUnitario);
+    } else if(a.percentual!=null){
+      vu = Math.round(vu * (1 + pv(a.percentual) / 100) * 100) / 100;
+    }
+  }
+  return vu;
+}
+
+// Retorna a data YYYY-MM-DD do pagamento a partir de mes/ano selecionados no modal
+function getDataPagamentoModal(){
+  const mes=document.getElementById('p-mes')?.value;
+  const ano=document.getElementById('p-ano')?.value;
+  if(!mes||!ano) return null;
+  const m=MESES_CURTOS.indexOf((mes||'').toUpperCase());
+  if(m<0) return null;
+  // Usa o último dia do mês como referência
+  const ultimo=new Date(parseInt(ano), m+1, 0).getDate();
+  return `${ano}-${String(m+1).padStart(2,'0')}-${String(ultimo).padStart(2,'0')}`;
+}
+
 function calcAPagar(){
   const val=pv(document.getElementById('p-valor').value);
   const glosa=pv(document.getElementById('p-glosa').value);
@@ -1249,7 +1279,7 @@ function calcAPagar(){
 }
 
 function preencherVUPorItem(){
-  preencherItemPorEmpenho(); // mantém lógica existente de preencher empenho
+  preencherItemPorEmpenho();
   const itemId=document.getElementById('p-item').value;
   const vuEl=document.getElementById('p-vu');
   const refEl=document.getElementById('p-item-ref');
@@ -1257,15 +1287,27 @@ function preencherVUPorItem(){
   if(!itemId||!currentContratoId){ if(vuEl) vuEl.value=''; if(refEl) refEl.textContent='—'; return; }
   const c=DB.contratos.find(x=>x.id===currentContratoId); if(!c) return;
   const item=(c.itens||[]).find(x=>x.id===itemId); if(!item) return;
-  const vu=item.valorUnitario||null;
+
+  // VU efetivo na data do pagamento (considera apostilamentos)
+  const dataPgto=getDataPagamentoModal();
+  const vuEfetivo=calcVUEfetivo(item, dataPgto);
   const qtdContrato=item.qtd||null;
   const valEfetivo=calcValorEfetivo(item);
-  if(vuEl) vuEl.value=vu?vu.toFixed(2):'';
-  if(refEl) refEl.textContent=qtdContrato&&vu
-    ? `${qtdContrato} un × ${fmt(vu)} = ${fmt(valEfetivo)}`
-    : `Total: ${fmt(valEfetivo)}`;
-  // Se já tem qtd preenchida, recalcula o valor
-  if(qtdEl&&pv(qtdEl.value)>0&&vu) calcValorPorQtd();
+
+  if(vuEl) vuEl.value=vuEfetivo?vuEfetivo.toFixed(2):'';
+
+  // Indicar se houve reajuste em relação ao VU original
+  const vuOriginal=item.valorUnitario||null;
+  const reajustado=vuOriginal&&vuEfetivo&&Math.abs(vuEfetivo-vuOriginal)>0.001;
+  if(refEl){
+    let texto = qtdContrato&&vuEfetivo
+      ? `${qtdContrato} un × ${fmt(vuEfetivo)}`
+      : `Total: ${fmt(valEfetivo)}`;
+    if(reajustado) texto += ` ⚠️ (original: ${fmt(vuOriginal)})`;
+    refEl.textContent=texto;
+    refEl.style.color=reajustado?'var(--warning)':'';
+  }
+  if(qtdEl&&pv(qtdEl.value)>0&&vuEfetivo) calcValorPorQtd();
 }
 
 function calcValorPorQtd(){
@@ -1273,8 +1315,11 @@ function calcValorPorQtd(){
   const itemId=document.getElementById('p-item').value;
   if(!qtd||!itemId||!currentContratoId) return;
   const c=DB.contratos.find(x=>x.id===currentContratoId); if(!c) return;
-  const item=(c.itens||[]).find(x=>x.id===itemId); if(!item||!item.valorUnitario) return;
-  const val=Math.round(qtd*item.valorUnitario*100)/100;
+  const item=(c.itens||[]).find(x=>x.id===itemId); if(!item) return;
+  const dataPgto=getDataPagamentoModal();
+  const vu=calcVUEfetivo(item, dataPgto);
+  if(!vu) return;
+  const val=Math.round(qtd*vu*100)/100;
   document.getElementById('p-valor').value=val.toFixed(2);
   calcAPagar();
 }
@@ -1285,8 +1330,11 @@ function calcQtdPorValor(){
   const qtdEl=document.getElementById('p-qtd');
   if(!val||!itemId||!currentContratoId||!qtdEl) return;
   const c=DB.contratos.find(x=>x.id===currentContratoId); if(!c) return;
-  const item=(c.itens||[]).find(x=>x.id===itemId); if(!item||!item.valorUnitario) return;
-  const qtd=Math.round((val/item.valorUnitario)*1000)/1000;
+  const item=(c.itens||[]).find(x=>x.id===itemId); if(!item) return;
+  const dataPgto=getDataPagamentoModal();
+  const vu=calcVUEfetivo(item, dataPgto);
+  if(!vu) return;
+  const qtd=Math.round((val/vu)*1000)/1000;
   qtdEl.value=qtd;
 }
 
@@ -2167,22 +2215,38 @@ function atualizarBaseApostilamento(){
   const c=DB.contratos.find(x=>x.id===currentContratoId); if(!c||!itemId) return;
   const item=(c.itens||[]).find(x=>x.id===itemId); if(!item) return;
   const valEfetivo=calcValorEfetivo(item);
-  // Se editando, mostra o valor ANTES do apostilamento atual como base
   const valBase = editApostilamentoId ? calcBaseItemParaApost(item, editApostilamentoId) : valEfetivo;
+  // VU base: sem apostilamento atual
+  const vuBase = editApostilamentoId ? calcBaseVUParaApost(item, editApostilamentoId) : calcVUEfetivo(item, null);
   const nApos=(item.apostilamentos||[]).length;
+  const temVU=item.valorUnitario&&item.qtd;
   document.getElementById('apost-contrato-info').innerHTML=`
     <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center">
       <div><span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-tertiary)">Contrato</span><br><strong>${c.numero} — ${c.fornecedor}</strong></div>
-      <div><span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-tertiary)">Item Selecionado</span><br><strong>${item.nome} (${item.tipo})</strong></div>
-      <div><span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-tertiary)">Valor Original do Item</span><br><strong style="font-family:var(--font-mono);color:var(--text-tertiary)">${fmt(item.valor)}</strong></div>
-      <div><span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-tertiary)">${editApostilamentoId?'Base (antes deste apostilamento)':'Valor Atual c/ Reajustes'}</span><br><strong style="font-family:var(--font-mono);color:var(--warning)">${fmt(valBase)}</strong></div>
+      <div><span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-tertiary)">Item</span><br><strong>${item.nome} (${item.tipo})</strong></div>
+      ${temVU?`<div><span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-tertiary)">Qtd × VU Base</span><br><strong style="font-family:var(--font-mono);color:var(--text-tertiary)">${item.qtd} un × ${fmt(vuBase||item.valorUnitario)}</strong></div>`:''}
+      <div><span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-tertiary)">${editApostilamentoId?'Valor Base (antes deste apost.)':'Valor Atual c/ Reajustes'}</span><br><strong style="font-family:var(--font-mono);color:var(--warning)">${fmt(valBase)}</strong></div>
       ${editApostilamentoId?`<div><span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-tertiary)">Valor Atual c/ Todos</span><br><strong style="font-family:var(--font-mono);color:var(--success)">${fmt(valEfetivo)}</strong></div>`:''}
       <div><span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-tertiary)">Apostilamentos</span><br><strong>${nApos}</strong></div>
     </div>`;
-  // Limpa preview e campos de valor ao trocar item
   document.getElementById('apost-preview-box').style.display='none';
   document.getElementById('apost-percentual').value='';
   document.getElementById('apost-novo-valor').value='';
+}
+
+// Retorna o VU do item ANTES de um apostilamento específico
+function calcBaseVUParaApost(item, apostId){
+  if(!item.valorUnitario) return null;
+  let vu = pv(item.valorUnitario);
+  for(const a of (item.apostilamentos||[])){
+    if(a.id === apostId) break;
+    if(a.novoValorUnitario!=null && pv(a.novoValorUnitario)>0){
+      vu = pv(a.novoValorUnitario);
+    } else if(a.percentual!=null){
+      vu = Math.round(vu * (1 + pv(a.percentual) / 100) * 100) / 100;
+    }
+  }
+  return vu;
 }
 
 function previewApostilamento(origem){
@@ -2190,7 +2254,6 @@ function previewApostilamento(origem){
   const itemId=document.getElementById('apost-item').value;
   const item=itemId?(c.itens||[]).find(x=>x.id===itemId):null;
   if(!item){ document.getElementById('apost-preview-box').style.display='none'; return; }
-  // Se estiver editando, base é o valor ANTES do apostilamento atual
   const base = editApostilamentoId ? calcBaseItemParaApost(item, editApostilamentoId) : calcValorEfetivo(item);
   if(!base){ document.getElementById('apost-preview-box').style.display='none'; return; }
 
@@ -2205,25 +2268,32 @@ function previewApostilamento(origem){
     }
     const novoValor=Math.round(base*(1+pct/100)*100)/100;
     document.getElementById('apost-novo-valor').value=novoValor.toFixed(2);
-    mostrarPreview(base, pct, novoValor, content, box);
+    mostrarPreview(base, pct, novoValor, item, content, box);
   } else if(origem==='val'){
     const novoValor=pv(document.getElementById('apost-novo-valor').value);
     if(!novoValor||base===0){document.getElementById('apost-percentual').value='';box.style.display='none';return;}
     const pct=((novoValor/base)-1)*100;
     document.getElementById('apost-percentual').value=pct.toFixed(4);
-    mostrarPreview(base, pct, novoValor, content, box);
+    mostrarPreview(base, pct, novoValor, item, content, box);
   }
 }
 
-function mostrarPreview(base, pct, novoValor, content, box){
+function mostrarPreview(base, pct, novoValor, item, content, box){
   const variacao = novoValor - base;
+  // Calcular novo VU se item tem VU cadastrado
+  const vuBase = editApostilamentoId ? calcBaseVUParaApost(item, editApostilamentoId) : (item.valorUnitario||null);
+  const novoVU = vuBase ? Math.round(vuBase*(1+pct/100)*100)/100 : null;
+  const vuHtml = novoVU&&item.qtd ? `
+    <div><span style="font-size:9px;color:var(--text-tertiary);font-weight:600;text-transform:uppercase">Novo VU</span><div style="font-family:var(--font-mono);font-size:13px;color:var(--accent)">${fmt(novoVU)}/un</div></div>
+    <div><span style="font-size:9px;color:var(--text-tertiary);font-weight:600;text-transform:uppercase">Novo VU × Qtd</span><div style="font-family:var(--font-mono);font-size:11px;color:var(--text-tertiary)">${item.qtd} × ${fmt(novoVU)} = ${fmt(novoValor)}</div></div>` : '';
   content.innerHTML=`
     <div><span style="font-size:9px;color:var(--text-tertiary);font-weight:600;text-transform:uppercase">Valor Base</span><div style="font-family:var(--font-mono);font-size:13px">${fmt(base)}</div></div>
     <div style="font-size:18px;color:var(--text-tertiary);align-self:center">→</div>
     <div><span style="font-size:9px;color:var(--text-tertiary);font-weight:600;text-transform:uppercase">Reajuste</span><div style="font-family:var(--font-mono);font-size:13px;color:${pct>=0?'var(--success)':'var(--danger)'}">${pct>=0?'+':''}${pct.toFixed(4)}%</div></div>
     <div style="font-size:18px;color:var(--text-tertiary);align-self:center">=</div>
     <div><span style="font-size:9px;color:var(--text-tertiary);font-weight:600;text-transform:uppercase">Novo Valor</span><div style="font-family:var(--font-mono);font-size:15px;font-weight:600;color:var(--success)">${fmt(novoValor)}</div></div>
-    <div><span style="font-size:9px;color:var(--text-tertiary);font-weight:600;text-transform:uppercase">Variação</span><div style="font-family:var(--font-mono);font-size:13px;color:${variacao>=0?'var(--success)':'var(--danger)'}">${variacao>=0?'+':''}${fmt(variacao)}</div></div>`;
+    <div><span style="font-size:9px;color:var(--text-tertiary);font-weight:600;text-transform:uppercase">Variação</span><div style="font-family:var(--font-mono);font-size:13px;color:${variacao>=0?'var(--success)':'var(--danger)'}">${variacao>=0?'+':''}${fmt(variacao)}</div></div>
+    ${vuHtml}`;
   box.style.display='';
 }
 
@@ -2240,17 +2310,20 @@ function salvarApostilamento(){
   const item=(c.itens||[]).find(x=>x.id===itemId); if(!item){toast('Item não encontrado','error');return;}
   if(!item.apostilamentos) item.apostilamentos=[];
 
-  // Base correta: se editando, exclui o apostilamento atual do cálculo
   const base = editApostilamentoId ? calcBaseItemParaApost(item, editApostilamentoId) : calcValorEfetivo(item);
   let percentual=pv(pctStr);
   let novoValor=pv(novoValorStr);
   if(pctStr!==''&&novoValorStr==='') novoValor=Math.round(base*(1+percentual/100)*100)/100;
   if(novoValorStr!==''&&pctStr==='') percentual=base>0?((novoValor/base)-1)*100:0;
-  // Sempre arredondar novoValor para 2 casas decimais
   novoValor=Math.round(novoValor*100)/100;
+
+  // Calcular novoValorUnitario se item tem VU cadastrado
+  const vuBase = editApostilamentoId ? calcBaseVUParaApost(item, editApostilamentoId) : calcVUEfetivo(item, null);
+  const novoValorUnitario = vuBase ? Math.round(vuBase*(1+percentual/100)*100)/100 : undefined;
 
   const dados={
     data, percentual, novoValor,
+    novoValorUnitario,
     processo:uc(document.getElementById('apost-processo').value.trim()),
     obs:uc(document.getElementById('apost-obs').value.trim())
   };
@@ -2610,12 +2683,12 @@ function renderItemCardHtml(item, c){
   const apostHtml=hasA?`<div class="apost-list">
     <div style="font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:0.4px;color:var(--text-tertiary);margin-bottom:5px">📎 Apostilamentos de Reajuste</div>
     ${(item.apostilamentos||[]).map((a,idx)=>{
-      let base=pv(item.valor);
-      for(let i=0;i<idx;i++) base=base*(1+pv(item.apostilamentos[i].percentual)/100);
-      const novoVal=base*(1+pv(a.percentual)/100);
+      // Usar novoValor salvo se disponível (fonte da verdade)
+      const novoVal=a.novoValor!=null&&pv(a.novoValor)>0?pv(a.novoValor):calcValorEfetivo({...item,apostilamentos:item.apostilamentos.slice(0,idx+1)});
+      const vuInfo=a.novoValorUnitario&&item.qtd?` · VU: ${fmt(a.novoValorUnitario)}/un`:'';
       return`<div class="apost-row">
         <span class="apost-pct">${pv(a.percentual)>0?'+':''}${pv(a.percentual).toFixed(2)}%</span>
-        <span class="apost-info">${fmtD(a.data)}${a.processo?` · ${a.processo}`:''}${a.obs?` · ${a.obs}`:''}</span>
+        <span class="apost-info">${fmtD(a.data)}${a.processo?` · ${a.processo}`:''}${a.obs?` · ${a.obs}':''}${vuInfo}</span>
         <span class="apost-result">→ ${fmt(novoVal)}</span>
         <div class="action-wrap" onclick="event.stopPropagation()">
           <button class="action-btn" onclick="openActionMenu(event,this)" style="width:22px;height:22px;font-size:11px">⋯</button>
